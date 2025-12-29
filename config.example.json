@@ -1,0 +1,13 @@
+{
+  "coloreme": {
+    "username": "your_coloreme_username",
+    "password": "your_coloreme_password",
+    "loginUrl": "https://admin.shop-pro.jp/login",
+    "orderListUrl": "https://admin.shop-pro.jp/?mode=order_list"
+  },
+  "yayoi": {
+    "windowTitle": "弥生販売",
+    "searchDialogTitle": "検索",
+    "customerCodeFieldId": "customerCodeEdit"
+  }
+}

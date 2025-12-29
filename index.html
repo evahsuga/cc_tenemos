@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>業務自動化ランチャー</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      min-width: 600px;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: white;
+    }
+
+    .btn-coloreme {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .btn-yayoi {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .btn-test {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    #status.show {
+      display: block;
+    }
+
+    #status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    #status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 業務自動化ランチャー</h1>
+
+    <div class="button-group">
+      <button class="btn-coloreme" onclick="runColorMe()">
+        📦 カラーミーショップ自動実行
+      </button>
+
+      <button class="btn-yayoi" onclick="runYayoi()">
+        💼 弥生販売自動実行
+      </button>
+
+      <button class="btn-test" onclick="testAction()">
+        🧪 接続テスト
+      </button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    function showStatus(message, isSuccess = true) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = isSuccess ? 'show success' : 'show error';
+
+      setTimeout(() => {
+        status.classList.remove('show');
+      }, 3000);
+    }
+
+    async function testAction() {
+      try {
+        const result = await window.api.testAction();
+        showStatus(result.message, true);
+      } catch (error) {
+        showStatus('エラー: ' + error.message, false);
+      }
+    }
+
+    async function runColorMe() {
+      const orderId = prompt('受注IDを入力してください:', '12345');
+      if (!orderId) return;
+
+      showStatus('カラーミーショップ自動化を実行中...', true);
+
+      try {
+        const result = await window.api.runColorMe(orderId);
+        showStatus(result.message, result.success);
+      } catch (error) {
+        showStatus('エラー: ' + error.message, false);
+      }
+    }
+
+    async function runYayoi() {
+      const customerCode = prompt('顧客コードを入力してください:', '12345');
+      if (!customerCode) return;
+
+      showStatus('弥生販売自動化を実行中...', true);
+
+      try {
+        const result = await window.api.runYayoi(customerCode);
+        showStatus(result.message, result.success);
+      } catch (error) {
+        showStatus('エラー: ' + error.message, false);
+      }
+    }
+  </script>
+</body>
+</html>
