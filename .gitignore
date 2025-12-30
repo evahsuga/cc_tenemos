@@ -1,32 +1,60 @@
-# Dependencies
+# 依存関係
 node_modules/
+package-lock.json
 
-# Environment variables
-.env
-.env.local
-config.json
-
-# Build outputs
+# ビルド出力
 dist/
 build/
+*.dmg
+*.exe
+*.app
 
-# OS files
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
 
-# IDE
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# スクリーンショット（テスト用）
+*.png
+!build/icon.png
+
+# テスト・一時ファイル
+*.zip
+test-*.js
+run-*.js
+*-page.png
+error-*.png
+step*.png
+current-*.png
+download-*.png
+menu-*.png
+
+# Chrome debug data
+/tmp/chrome-debug/
+/tmp/chrome-debug-electron/
+
+# ログファイル
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE設定
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Logs
+# 環境設定（将来的に使用する可能性）
+.env
+.env.local
+.env.*.local
+
+# OS生成ファイル
 *.log
-npm-debug.log*
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.Python
-venv/
+*.tmp
