@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受注〜配送 業務フローダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'メイリオ', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .phase-section {
+            margin-bottom: 40px;
+        }
+        
+        .phase-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .phase-header::before {
+            content: "■";
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        
+        .step-card {
+            background: #f8f9ff;
+            border: 2px solid #e1e4f0;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .step-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+            cursor: pointer;
+        }
+        
+        .step-card.disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+        
+        .step-card.disabled:hover {
+            border-color: #e1e4f0;
+            box-shadow: none;
+            transform: none;
+            cursor: default;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .step-title {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .step-status {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .note-icon {
+            position: relative;
+            cursor: help;
+            font-size: 18px;
+            color: #ff9800;
+        }
+        
+        .note-icon:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 125%;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 1000;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            right: 15px;
+            border: 6px solid transparent;
+            border-top-color: #333;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #4caf50;
+        }
+        
+        .step-card.completed {
+            opacity: 0.6;
+            background: #f0f0f0;
+        }
+        
+        .step-card.completed .step-title {
+            text-decoration: line-through;
+            color: #999;
+        }
+        
+        .step-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .step-wrapper .step-card {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .checkbox-external {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #4caf50;
+            flex-shrink: 0;
+        }
+        
+        .collapsible-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .collapsible-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .collapsible-header::before {
+            content: "■";
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        
+        .toggle-icon {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-content.open {
+            max-height: 2000px;
+        }
+        
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .badge-manual {
+            background: #fff3e0;
+            color: #e65100;
+            border: 2px solid #ffb74d;
+        }
+        
+        .badge-auto {
+            background: #e3f2fd;
+            color: #0d47a1;
+            border: 2px solid #42a5f5;
+        }
+        
+        .badge-semi-auto {
+            background: #fff9c4;
+            color: #f57f17;
+            border: 2px solid #fbc02d;
+        }
+        
+        .badge-manual-dev {
+            background: #ffebee;
+            color: #c62828;
+            border: 2px solid #ef5350;
+        }
+        
+        .badge-webapp {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #66bb6a;
+        }
+        
+        .badge-powerautomate {
+            background: #f3e5f5;
+            color: #6a1b9a;
+            border: 2px solid #ab47bc;
+        }
+        
+        .badge-existing {
+            background: #e0e0e0;
+            color: #424242;
+            border: 2px solid #9e9e9e;
+        }
+        
+        .badge-completed {
+            background: #c8e6c9;
+            color: #1b5e20;
+            border: 2px solid #4caf50;
+        }
+        
+        .badge-completed::before {
+            content: "✅ ";
+        }
+        
+        .badge-inprogress {
+            background: #fff9c4;
+            color: #f57f17;
+            border: 2px solid #ffeb3b;
+        }
+        
+        .badge-inprogress::before {
+            content: "🔨 ";
+        }
+        
+        .badge-planned {
+            background: #f5f5f5;
+            color: #616161;
+            border: 2px solid #bdbdbd;
+        }
+        
+        .badge-planned::before {
+            content: "📋 ";
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f5f5f5;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* モーダルオーバーレイ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .modal-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal-close-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .success-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .error-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 受注〜配送 業務フローダッシュボード</h1>
+            <p>カラーミーショップ受注から配送完了までの作業フロー管理</p>
+        </div>
+        
+        <div class="content">
+            
+            <!-- フェーズ1: 受注処理 -->
+            <div class="phase-section">
+                <div class="phase-header">受注処理フェーズ</div>
+                
+                <!-- ステップ1 -->
+                <div class="step-wrapper">
+                    <div class="step-card disabled" id="step-card-1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">カラーミー 受注伝票出力</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual">手動</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミーショップ管理画面</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-1" onchange="toggleCompleteExternal(this, 'step-card-1')">
+                </div>
+                
+                <!-- ステップ2 -->
+                <div class="step-wrapper">
+                    <div class="step-card" id="step-card-2" onclick="runColorMeAutomation()">
+                        <div class="step-number">2</div>
+                        <div class="step-title">カラーミー 売上伝票準備・CSVダウンロード</div>
+                        <div class="step-status">
+                            <span class="badge badge-auto" id="step-2-badge">AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">Electron自動化 / クリックで実行</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-2" onchange="toggleCompleteExternal(this, 'step-card-2')">
+                </div>
+                
+                <!-- ステップ3 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">顧客登録照合</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-3" onchange="toggleCompleteExternal(this, 'step-card-3')">
+                </div>
+            </div>
+            
+            <!-- フェーズ2: 入金・伝票準備 -->
+            <div class="phase-section">
+                <div class="phase-header">入金・伝票準備フェーズ</div>
+                
+                <!-- ステップ4 -->
+                <div class="step-wrapper">
+                    <div class="step-card disabled" id="step-card-4">
+                        <div class="step-number">4</div>
+                        <div class="step-title">入金確認</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual">手動</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">入金確認アプリ 開発中</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
+                </div>
+                
+                <!-- ステップ5 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5">
+                        <div class="step-number">5</div>
+                        <div class="step-title">伝票出力の注文選出およびtxtデータ出力</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-5" onchange="toggleCompleteExternal(this, 'step-card-5')">
+                </div>
+            </div>
+            
+            <!-- フェーズ3: 弥生販売インポート -->
+            <div class="phase-section">
+                <div class="phase-header">弥生販売インポートフェーズ</div>
+                
+                <!-- ステップ6 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-6">
+                        <div class="step-number">6</div>
+                        <div class="step-title">弥生販売インポート 顧客台帳入力</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-6" onchange="toggleCompleteExternal(this, 'step-card-6')">
+                </div>
+                
+                <!-- ステップ7 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-7">
+                        <div class="step-number">7</div>
+                        <div class="step-title">弥生販売インポート 売上伝票入力</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-7" onchange="toggleCompleteExternal(this, 'step-card-7')">
+                </div>
+                
+                <!-- ステップ8 -->
+                <div class="step-wrapper">
+                    <div class="step-card disabled" id="step-card-8">
+                        <div class="step-number">8</div>
+                        <div class="step-title">弥生販売 売上伝票印刷</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual-dev">手動（開発中）</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">売上伝票印刷アプリ 開発中</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-8" onchange="toggleCompleteExternal(this, 'step-card-8')">
+                </div>
+            </div>
+            
+            <!-- フェーズ4: 出荷処理（折りたたみ式） -->
+            <div class="phase-section">
+                <div class="collapsible-header" onclick="toggleCollapse()">
+                    <span>出荷処理フェーズ</span>
+                    <span class="toggle-icon" id="toggleIcon">▼</span>
+                </div>
+                
+                <div class="collapsible-content" id="shippingPhase">
+                    <!-- ステップ9 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-9">
+                            <div class="step-number">9</div>
+                            <div class="step-title">カラーミー 出荷伝票準備・CSVダウンロード（B2システム用）</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Shift+9</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-9" onchange="toggleCompleteExternal(this, 'step-card-9')">
+                    </div>
+                    
+                    <!-- ステップ10 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-10">
+                            <div class="step-number">10</div>
+                            <div class="step-title">弥生販売 出荷伝票準備・CSVダウンロード（B3システム用）</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Shift+0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-10" onchange="toggleCompleteExternal(this, 'step-card-10')">
+                    </div>
+                    
+                    <!-- ステップ11 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-11">
+                            <div class="step-number">11</div>
+                            <div class="step-title">ヤマトB2システム CSVデータ読み込み（カラーミー分）</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Alt+1</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-11" onchange="toggleCompleteExternal(this, 'step-card-11')">
+                    </div>
+                    
+                    <!-- ステップ12 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-12">
+                            <div class="step-number">12</div>
+                            <div class="step-title">ヤマトB2システム CSVデータ読み込み（弥生販売分）</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Alt+2</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-12" onchange="toggleCompleteExternal(this, 'step-card-12')">
+                    </div>
+                    
+                    <!-- ステップ13 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-13">
+                            <div class="step-number">13</div>
+                            <div class="step-title">ヤマトB2システム 出荷データ出力、印刷</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Alt+3</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-13" onchange="toggleCompleteExternal(this, 'step-card-13')">
+                    </div>
+                    
+                    <!-- ステップ14 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-14">
+                            <div class="step-number">14</div>
+                            <div class="step-title">ヤマトB2システム 出荷データCSVダウンロード</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Alt+4</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-14" onchange="toggleCompleteExternal(this, 'step-card-14')">
+                    </div>
+                    
+                    <!-- ステップ15 -->
+                    <div class="step-wrapper">
+                        <div class="step-card disabled" id="step-card-15">
+                            <div class="step-number">15</div>
+                            <div class="step-title">カラーミー ヤマトB2出荷済みCSVの読み込みと出荷完了実行</div>
+                            <div class="step-status">
+                                <span class="badge badge-manual-dev">手動（開発中）</span>
+                                <div class="note-icon">
+                                    📝
+                                    <div class="tooltip">PowerAutomate 開発中 / ショートカットキー: Ctrl+Alt+5</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="checkbox-external" id="task-15" onchange="toggleCompleteExternal(this, 'step-card-15')">
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <div class="footer">
+            <p>📊 業務フローダッシュボード ver 1.1</p>
+            <p>最終更新: 2025年12月21日</p>
+        </div>
+    </div>
+
+    <!-- 実行状況モーダル -->
+    <div class="modal-overlay" id="executionModal">
+        <div class="modal-content">
+            <div id="modalSpinner" class="spinner" style="display: none;"></div>
+            <div id="modalIcon"></div>
+            <div class="modal-title" id="modalTitle">処理中...</div>
+            <div class="modal-message" id="modalMessage">カラーミーショップのCSVダウンロードを実行しています。<br>しばらくお待ちください。</div>
+            <button class="modal-close-btn" id="modalCloseBtn" style="display: none;" onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        // チェックボックスの完了状態を切り替え（外部チェックボックス用）
+        function toggleCompleteExternal(checkbox, stepCardId) {
+            const stepCard = document.getElementById(stepCardId);
+            if (checkbox.checked) {
+                stepCard.classList.add('completed');
+            } else {
+                stepCard.classList.remove('completed');
+            }
+        }
+
+        // 折りたたみの開閉
+        function toggleCollapse() {
+            const content = document.getElementById('shippingPhase');
+            const icon = document.getElementById('toggleIcon');
+
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.classList.remove('open');
+                icon.textContent = '▼';
+            } else {
+                content.classList.add('open');
+                icon.classList.add('open');
+                icon.textContent = '▲';
+            }
+        }
+
+        // カラーミー自動化を実行
+        async function runColorMeAutomation() {
+            // モーダルを表示
+            showModal('処理中...', 'カラーミーショップのCSVダウンロードを実行しています。<br>しばらくお待ちください。', 'loading');
+
+            try {
+                // バッジを実行中に変更
+                const badge = document.getElementById('step-2-badge');
+                badge.className = 'badge badge-inprogress';
+                badge.textContent = '実行中';
+
+                // Electronメインプロセスの自動化を呼び出し
+                const result = await window.api.runColorMeDownload();
+
+                if (result.success) {
+                    // 成功時
+                    showModal('成功！', result.message, 'success');
+                    badge.className = 'badge badge-completed';
+                    badge.textContent = '完了';
+
+                    // チェックボックスも自動でチェック
+                    const checkbox = document.getElementById('task-2');
+                    checkbox.checked = true;
+                    toggleCompleteExternal(checkbox, 'step-card-2');
+                } else {
+                    // エラー時
+                    showModal('エラー', result.message, 'error');
+                    badge.className = 'badge badge-auto';
+                    badge.textContent = 'AUTO';
+                }
+
+            } catch (error) {
+                // 例外発生時
+                showModal('エラー', 'エラーが発生しました: ' + error.message, 'error');
+                const badge = document.getElementById('step-2-badge');
+                badge.className = 'badge badge-auto';
+                badge.textContent = 'AUTO';
+            }
+        }
+
+        // モーダル表示関数
+        function showModal(title, message, type) {
+            const modal = document.getElementById('executionModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalSpinner = document.getElementById('modalSpinner');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message;
+
+            if (type === 'loading') {
+                // ローディング中
+                modalSpinner.style.display = 'block';
+                modalIcon.innerHTML = '';
+                modalCloseBtn.style.display = 'none';
+            } else if (type === 'success') {
+                // 成功
+                modalSpinner.style.display = 'none';
+                modalIcon.innerHTML = '<div class="success-icon">✅</div>';
+                modalCloseBtn.style.display = 'block';
+            } else if (type === 'error') {
+                // エラー
+                modalSpinner.style.display = 'none';
+                modalIcon.innerHTML = '<div class="error-icon">❌</div>';
+                modalCloseBtn.style.display = 'block';
+            }
+
+            modal.classList.add('show');
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            const modal = document.getElementById('executionModal');
+            modal.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
