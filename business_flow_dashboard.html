@@ -479,7 +479,7 @@
                 
                 <!-- ステップ3 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-3">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-3" target="color_yayo_app" rel="noopener noreferrer">
                         <div class="step-number">3</div>
                         <div class="step-title">顧客登録照合</div>
                         <div class="step-status">
@@ -514,11 +514,11 @@
                     <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
                 </div>
                 
-                <!-- ステップ5 -->
+                <!-- ステップ5-1 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5">
-                        <div class="step-number">5</div>
-                        <div class="step-title">伝票出力の注文選出およびtxtデータ出力</div>
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5-1" target="color_yayo_app" rel="noopener noreferrer">
+                        <div class="step-number">5-1</div>
+                        <div class="step-title">新規登録が必要な人の「弥生販売顧客登録用」txtダウンロード</div>
                         <div class="step-status">
                             <span class="badge badge-semi-auto">準AUTO</span>
                             <div class="note-icon">
@@ -527,7 +527,23 @@
                             </div>
                         </div>
                     </a>
-                    <input type="checkbox" class="checkbox-external" id="task-5" onchange="toggleCompleteExternal(this, 'step-card-5')">
+                    <input type="checkbox" class="checkbox-external" id="task-5-1" onchange="toggleCompleteExternal(this, 'step-card-5-1')">
+                </div>
+
+                <!-- ステップ5-2 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5-2" target="color_yayo_app" rel="noopener noreferrer">
+                        <div class="step-number">5-2</div>
+                        <div class="step-title">伝票出力の必要な人の「弥生販売売上伝票用」txtダウンロード</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-5-2" onchange="toggleCompleteExternal(this, 'step-card-5-2')">
                 </div>
             </div>
             
@@ -537,33 +553,33 @@
                 
                 <!-- ステップ6 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-6">
+                    <div class="step-card" id="step-card-6" onclick="showUnderDevelopmentModal('弥生販売インポート 顧客台帳入力')">
                         <div class="step-number">6</div>
                         <div class="step-title">弥生販売インポート 顧客台帳入力</div>
                         <div class="step-status">
-                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <span class="badge badge-manual-dev">開発中</span>
                             <div class="note-icon">
                                 📝
-                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                                <div class="tooltip">弥生販売自動化プログラム 開発中</div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <input type="checkbox" class="checkbox-external" id="task-6" onchange="toggleCompleteExternal(this, 'step-card-6')">
                 </div>
-                
+
                 <!-- ステップ7 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-7">
+                    <div class="step-card" id="step-card-7" onclick="showUnderDevelopmentModal('弥生販売インポート 売上伝票入力')">
                         <div class="step-number">7</div>
                         <div class="step-title">弥生販売インポート 売上伝票入力</div>
                         <div class="step-status">
-                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <span class="badge badge-manual-dev">開発中</span>
                             <div class="note-icon">
                                 📝
-                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                                <div class="tooltip">弥生販売自動化プログラム 開発中</div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <input type="checkbox" class="checkbox-external" id="task-7" onchange="toggleCompleteExternal(this, 'step-card-7')">
                 </div>
                 
@@ -828,6 +844,15 @@
         function closeModal() {
             const modal = document.getElementById('executionModal');
             modal.classList.remove('show');
+        }
+
+        // 開発中モーダルを表示
+        function showUnderDevelopmentModal(featureName) {
+            showModal(
+                '開発中',
+                `${featureName}機能は現在開発中です。\n\n弥生販売自動化プログラムの実装が完了次第、利用可能になります。`,
+                'error'
+            );
         }
     </script>
 </body>
