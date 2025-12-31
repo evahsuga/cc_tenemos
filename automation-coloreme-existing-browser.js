@@ -57,7 +57,10 @@ class ColorMeExistingBrowserAutomation {
 
   async navigateToPage(url) {
     console.log(`ページに移動: ${url}`);
-    await this.page.goto(url, { waitUntil: 'networkidle2' });
+    await this.page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000  // 60秒
+    });
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
 

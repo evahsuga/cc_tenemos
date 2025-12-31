@@ -230,10 +230,13 @@ ipcMain.handle('run-coloreme-download', async (event) => {
 
     // 第1ステップ: ダウンロードページへ移動
     await Promise.all([
-      automation.page.waitForNavigation({ waitUntil: 'networkidle2' }),
+      automation.page.waitForNavigation({
+        waitUntil: 'domcontentloaded',
+        timeout: 60000  // 60秒
+      }),
       automation.page.click('a[href*="mode=data_download"]')
     ]);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // 第2ステップ: データ種類を選択
     await automation.page.select('select[name="data_type"]', '9'); // 受注一括データ
