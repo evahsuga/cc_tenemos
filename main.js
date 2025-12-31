@@ -41,7 +41,7 @@ function startChromeDebug() {
       chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
       args = [
         '--remote-debugging-port=9222',
-        '--user-data-dir=/tmp/chrome-debug-electron',
+        '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
         '--no-default-browser-check'
       ];
@@ -50,7 +50,7 @@ function startChromeDebug() {
       chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
       args = [
         '--remote-debugging-port=9222',
-        '--user-data-dir=C:\\temp\\chrome-debug-electron',
+        '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
         '--no-default-browser-check'
       ];
@@ -59,7 +59,7 @@ function startChromeDebug() {
       chromePath = 'google-chrome';
       args = [
         '--remote-debugging-port=9222',
-        '--user-data-dir=/tmp/chrome-debug-electron',
+        '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
         '--no-default-browser-check'
       ];
