@@ -163,3 +163,8 @@ MIT
 ## サポート
 
 質問や問題がある場合は、プロジェクト管理者までお問い合わせください。
+
+## 開発履歴
+
+### 2026年1月8日
+- evahsuga/cc_tenemos リポジトリにて、tenemosnet (office1tenemos@gmail.com) との共同作業を開始
