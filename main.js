@@ -70,6 +70,9 @@ function startChromeDebug() {
     }
 
     try {
+      console.log('Chrome起動コマンド:', chromePath);
+      console.log('Chrome起動引数:', args.join(' '));
+
       chromeProcess = spawn(chromePath, args, {
         detached: true,
         stdio: 'ignore'
@@ -77,13 +80,13 @@ function startChromeDebug() {
 
       chromeProcess.unref();
 
-      console.log('✓ Chrome起動完了');
+      console.log('✓ Chrome起動コマンド実行完了');
       console.log('✓ カラーミーログインページを開きました');
 
-      // 起動完了を待つ（ログインページの読み込みを待つため少し長めに）
+      // すぐにresolve（デバッグポート準備待ちは別途行う）
       setTimeout(() => {
         resolve(true);
-      }, 5000);
+      }, 2000);
 
     } catch (error) {
       console.error('❌ Chrome起動失敗:', error.message);
@@ -202,23 +205,26 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       try {
         await startChromeDebug();
 
-        // デバッグポートが準備できるまで待つ（最大10回リトライ）
+        // デバッグポートが準備できるまで待つ（最大20回リトライ、2秒間隔）
         console.log('Chromeデバッグポートの準備を待っています...');
         let retryCount = 0;
         let debugPortReady = false;
-        while (retryCount < 10 && !debugPortReady) {
+        while (retryCount < 20 && !debugPortReady) {
           debugPortReady = await checkChromeDebugRunning();
           if (!debugPortReady) {
-            console.log(`リトライ ${retryCount + 1}/10...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`リトライ ${retryCount + 1}/20...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
             retryCount++;
+          } else {
+            console.log('✓ デバッグポート接続成功！');
           }
         }
 
         if (!debugPortReady) {
+          console.error('❌ デバッグポートへの接続に失敗しました');
           return {
             success: false,
-            message: 'Chromeデバッグポートの準備が完了しませんでした。\n再度ボタンをクリックしてください。'
+            message: 'Chromeデバッグポートの準備が完了しませんでした（40秒タイムアウト）。\n\nChromeを手動で閉じて、再度ボタンをクリックしてください。'
           };
         }
 
