@@ -202,6 +202,28 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       try {
         await startChromeDebug();
 
+        // デバッグポートが準備できるまで待つ（最大10回リトライ）
+        console.log('Chromeデバッグポートの準備を待っています...');
+        let retryCount = 0;
+        let debugPortReady = false;
+        while (retryCount < 10 && !debugPortReady) {
+          debugPortReady = await checkChromeDebugRunning();
+          if (!debugPortReady) {
+            console.log(`リトライ ${retryCount + 1}/10...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retryCount++;
+          }
+        }
+
+        if (!debugPortReady) {
+          return {
+            success: false,
+            message: 'Chromeデバッグポートの準備が完了しませんでした。\n再度ボタンをクリックしてください。'
+          };
+        }
+
+        console.log('✓ デバッグポート準備完了');
+
         // Chrome起動後、Puppeteerで接続して自動ログインを試みる
         const connected = await automation.connectToExistingBrowser();
 
@@ -282,21 +304,79 @@ ipcMain.handle('run-coloreme-download', async (event) => {
           }
 
           // ログイン完了を待つ（ページ遷移を待機）
+          console.log('ログイン完了を待機しています...');
           await new Promise(resolve => setTimeout(resolve, 5000));
+
+          console.log('✓ ログイン完了');
+          console.log('CSVダウンロード処理を開始します...');
+
+          // ログイン後、そのままCSVダウンロード処理を続行
+          // （以下、通常のCSVダウンロード処理と同じ）
+
+          // メニューページに移動
+          const afterLoginUrl = automation.page.url();
+          if (!afterLoginUrl.includes('mode=menu')) {
+            console.log('メニューページに移動します...');
+            await automation.navigateToPage('https://admin.shop-pro.jp/?mode=menu');
+          }
+
+          // 第1ステップ: ダウンロードページへ移動
+          console.log('第1ステップ: ダウンロードページへ移動...');
+          await Promise.all([
+            automation.page.waitForNavigation({
+              waitUntil: 'domcontentloaded',
+              timeout: 60000
+            }),
+            automation.page.click('a[href*="mode=data_download"]')
+          ]);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // 第2ステップ: データ種類を選択
+          console.log('第2ステップ: データ種類を選択（受注一括データ）...');
+          await automation.page.select('select[name="data_type"]', '9');
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // 第3ステップ: 除外条件にチェック
+          console.log('第3ステップ: 除外条件にチェック...');
+          const checkbox1Checked = await automation.page.$eval('#except_shipped', el => el.checked);
+          if (!checkbox1Checked) {
+            await automation.page.click('#except_shipped');
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+
+          const checkbox2Checked = await automation.page.$eval('#sales_all_except_shipped', el => el.checked);
+          if (!checkbox2Checked) {
+            await automation.page.click('#sales_all_except_shipped');
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+
+          // 第4ステップ: ダウンロード実行
+          console.log('第4ステップ: ダウンロード実行...');
+          await automation.page.evaluate(() => {
+            if (typeof jf_ProductDownloadSubmit !== 'undefined') {
+              jf_ProductDownloadSubmit(0);
+            }
+          });
+
+          // ダウンロード完了を待つ
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
           await automation.disconnect();
 
+          console.log('✓✓✓ すべての処理が完了しました！');
+
           return {
-            success: false,
-            message: 'ログインが完了しました。\n\n再度このボタンをクリックして、CSVダウンロードを実行してください。'
+            success: true,
+            message: 'ログインからCSVダウンロードまで完了しました！\nダウンロードフォルダを確認してください。'
           };
 
         } catch (error) {
-          console.error('ログインボタンクリックエラー:', error.message);
+          console.error('自動化処理エラー:', error.message);
+          console.error('エラースタック:', error.stack);
           await automation.disconnect();
           return {
             success: false,
-            message: '自動ログインに失敗しました。\n手動でログインボタンをクリックし、ログイン後に再度このボタンをクリックしてください。'
+            message: '自動化処理中にエラーが発生しました。\n\nエラー: ' + error.message + '\n\n手動でログイン後、再度ボタンをクリックしてください。'
           };
         }
 
