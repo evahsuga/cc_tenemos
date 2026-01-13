@@ -23,9 +23,23 @@ class YayoiCustomerImportAutomation:
         """弥生販売に接続"""
         try:
             print("弥生販売に接続しています...", file=sys.stderr)
-            # 既に起動している弥生販売に接続（バージョン番号は問わない）
-            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=10)
-            self.main_window = self.app.window(title_re=".*弥生販売.*")
+            # 既に起動している弥生販売に接続
+            # メインウィンドウを特定するため「プロフェッショナル」または「スタンダード」を含む条件にする
+            # または、より具体的に会社名（管理者）を含むウィンドウを探す
+            try:
+                # まず、プロフェッショナル版を探す
+                self.app = Application(backend="uia").connect(title_re=".*弥生販売.*プロフェッショナル.*", timeout=5)
+                self.main_window = self.app.window(title_re=".*弥生販売.*プロフェッショナル.*")
+            except:
+                # 見つからなければスタンダード版を探す
+                try:
+                    self.app = Application(backend="uia").connect(title_re=".*弥生販売.*スタンダード.*", timeout=5)
+                    self.main_window = self.app.window(title_re=".*弥生販売.*スタンダード.*")
+                except:
+                    # それでも見つからなければ「管理者」を含むウィンドウを探す
+                    self.app = Application(backend="uia").connect(title_re=".*弥生販売.*管理者.*", timeout=5)
+                    self.main_window = self.app.window(title_re=".*弥生販売.*管理者.*")
+
             print(f"✓ 弥生販売に接続しました: {self.main_window.window_text()}", file=sys.stderr)
             return True
         except ElementNotFoundError:
