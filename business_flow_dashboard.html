@@ -553,11 +553,11 @@
                 
                 <!-- ステップ6 -->
                 <div class="step-wrapper">
-                    <div class="step-card" id="step-card-6" onclick="showUnderDevelopmentModal('弥生販売インポート 顧客台帳入力')">
+                    <div class="step-card" id="step-card-6" onclick="runYayoiCustomerImport()">
                         <div class="step-number">6</div>
                         <div class="step-title">弥生販売インポート 顧客台帳入力</div>
                         <div class="step-status">
-                            <span class="badge badge-manual-dev">開発中</span>
+                            <span class="badge badge-manual-dev" id="step-6-badge">開発中</span>
                             <div class="note-icon">
                                 📝
                                 <div class="tooltip">弥生販売自動化プログラム 開発中</div>
@@ -805,6 +805,48 @@
                 const badge = document.getElementById('step-2-badge');
                 badge.className = 'badge badge-auto';
                 badge.textContent = 'AUTO';
+            }
+        }
+
+        // 弥生販売 顧客台帳インポート自動化を実行
+        async function runYayoiCustomerImport() {
+            // モーダルを表示
+            showModal('処理中...', '弥生販売26のインポート画面に移動しています。<br>しばらくお待ちください。', 'loading');
+
+            try {
+                // バッジを実行中に変更
+                const badge = document.getElementById('step-6-badge');
+                badge.className = 'badge badge-inprogress';
+                badge.textContent = '実行中';
+
+                // Electronメインプロセスの自動化を呼び出し
+                const result = await window.api.runYayoiCustomerImport();
+
+                if (result.success) {
+                    // 成功時
+                    showModal('成功！', result.message, 'success');
+                    badge.className = 'badge badge-completed';
+                    badge.textContent = '完了';
+
+                    // チェックボックスも自動でチェック
+                    const checkbox = document.getElementById('task-6');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        toggleCompleteExternal(checkbox, 'step-card-6');
+                    }
+                } else {
+                    // エラー時
+                    showModal('エラー', result.message, 'error');
+                    badge.className = 'badge badge-manual-dev';
+                    badge.textContent = '開発中';
+                }
+
+            } catch (error) {
+                // 例外発生時
+                showModal('エラー', 'エラーが発生しました: ' + error.message, 'error');
+                const badge = document.getElementById('step-6-badge');
+                badge.className = 'badge badge-manual-dev';
+                badge.textContent = '開発中';
             }
         }
 

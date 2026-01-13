@@ -616,3 +616,65 @@ ipcMain.handle('run-coloreme-download', async (event) => {
     };
   }
 });
+
+// 弥生販売 顧客台帳インポート自動化のIPCハンドラー
+ipcMain.handle('run-yayoi-customer-import', async (event) => {
+  return new Promise((resolve, reject) => {
+    console.log('弥生販売 顧客台帳インポート自動化を開始...');
+
+    // Pythonスクリプトを実行
+    const pythonCommand = os.platform() === 'win32' ? 'python' : 'python3';
+    const python = spawn(pythonCommand, ['automation-yayoi-import-customer.py']);
+
+    let result = '';
+    let stderrOutput = '';
+
+    python.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log('[Python stdout]:', output);
+      result += output;
+    });
+
+    python.stderr.on('data', (data) => {
+      const output = data.toString();
+      console.error('[Python stderr]:', output);
+      stderrOutput += output;
+    });
+
+    python.on('close', (code) => {
+      console.log(`Python script exited with code ${code}`);
+
+      if (code === 0) {
+        try {
+          // JSONの最後の行を取得（前の行は標準エラー出力のログ）
+          const lines = result.trim().split('\n');
+          const jsonLine = lines[lines.length - 1];
+          const parsed = JSON.parse(jsonLine);
+          console.log('✓ 自動化完了:', parsed.message);
+          resolve(parsed);
+        } catch (e) {
+          console.error('結果のパースに失敗:', e.message);
+          console.error('出力内容:', result);
+          resolve({
+            success: false,
+            message: '結果の解析に失敗しました。\n\n標準エラー出力:\n' + stderrOutput
+          });
+        }
+      } else {
+        console.error('Python実行エラー（終了コード ' + code + '）');
+        resolve({
+          success: false,
+          message: 'Pythonスクリプトの実行に失敗しました。\n\n標準エラー出力:\n' + stderrOutput
+        });
+      }
+    });
+
+    python.on('error', (err) => {
+      console.error('Python起動エラー:', err);
+      resolve({
+        success: false,
+        message: 'Pythonの起動に失敗しました。\n\nPythonがインストールされているか確認してください。\nエラー: ' + err.message
+      });
+    });
+  });
+});

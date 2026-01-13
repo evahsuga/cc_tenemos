@@ -1,0 +1,161 @@
+# -*- coding: utf-8 -*-
+"""
+弥生販売26 顧客台帳インポート自動化
+Step 6: 弥生販売のインポート画面（顧客台帳）まで自動でナビゲート
+"""
+from pywinauto import Application
+from pywinauto.findwindows import ElementNotFoundError
+import sys
+import json
+import time
+
+class YayoiCustomerImportAutomation:
+    def __init__(self):
+        self.app = None
+        self.main_window = None
+
+    def connect_to_yayoi(self):
+        """弥生販売26に接続"""
+        try:
+            print("弥生販売26に接続しています...", file=sys.stderr)
+            # 既に起動している弥生販売26に接続
+            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*26.*", timeout=10)
+            self.main_window = self.app.window(title_re=".*弥生販売.*26.*")
+            print(f"✓ 弥生販売26に接続しました: {self.main_window.window_text()}", file=sys.stderr)
+            return True
+        except ElementNotFoundError:
+            print("❌ 弥生販売26が起動していません", file=sys.stderr)
+            return False
+        except Exception as e:
+            print(f"❌ 接続エラー: {str(e)}", file=sys.stderr)
+            return False
+
+    def navigate_to_import_menu(self):
+        """インポートメニューまでナビゲート"""
+        try:
+            print("インポートメニューにナビゲートしています...", file=sys.stderr)
+
+            # メニューバーから「ファイル」→「インポート」の順にアクセス
+            # 弥生販売26のメニュー構造を想定
+
+            # 方法1: メニューバーから選択
+            # メインウィンドウをアクティブにする
+            self.main_window.set_focus()
+            time.sleep(0.5)
+
+            # Alt+F でファイルメニューを開く
+            print("ファイルメニューを開いています...", file=sys.stderr)
+            self.main_window.type_keys("%f")  # Alt+F
+            time.sleep(1.0)
+
+            # 下矢印キーで「インポート」まで移動してEnter
+            # ※実際の弥生販売26のメニュー位置に応じて調整が必要
+            print("インポートメニューを選択しています...", file=sys.stderr)
+            # 一般的に「インポート」はファイルメニューの中ほどにある想定
+            # 実際の位置を調べて調整する必要があります
+
+            return True
+
+        except Exception as e:
+            print(f"❌ ナビゲーションエラー: {str(e)}", file=sys.stderr)
+            return False
+
+    def open_customer_import_dialog(self):
+        """顧客台帳インポートダイアログを開く"""
+        try:
+            print("顧客台帳インポートダイアログを開いています...", file=sys.stderr)
+
+            # インポートメニューから「顧客台帳」を選択
+            # ※実際のメニュー構造に応じて調整が必要
+
+            # インポートダイアログが開くまで待機
+            time.sleep(2.0)
+
+            # インポートダイアログが開いたか確認
+            try:
+                import_dialog = self.app.window(title_re=".*インポート.*", timeout=5)
+                print(f"✓ インポートダイアログを開きました: {import_dialog.window_text()}", file=sys.stderr)
+                return True
+            except:
+                print("インポートダイアログが見つかりませんでした", file=sys.stderr)
+                return False
+
+        except Exception as e:
+            print(f"❌ ダイアログオープンエラー: {str(e)}", file=sys.stderr)
+            return False
+
+    def print_window_info(self):
+        """デバッグ用：ウィンドウ情報を出力"""
+        try:
+            print("\n=== 弥生販売26 ウィンドウ情報 ===", file=sys.stderr)
+            print(f"タイトル: {self.main_window.window_text()}", file=sys.stderr)
+            print(f"クラス名: {self.main_window.class_name()}", file=sys.stderr)
+
+            # 利用可能なメニューを確認
+            print("\n=== メニューバー情報 ===", file=sys.stderr)
+            try:
+                menu_bar = self.main_window.menu_bar()
+                if menu_bar:
+                    print("メニューバーが見つかりました", file=sys.stderr)
+                    # メニュー項目を列挙
+                    menu_items = menu_bar.items()
+                    for i, item in enumerate(menu_items):
+                        print(f"  メニュー {i}: {item}", file=sys.stderr)
+            except Exception as e:
+                print(f"メニューバー取得エラー: {str(e)}", file=sys.stderr)
+
+            print("", file=sys.stderr)
+
+        except Exception as e:
+            print(f"ウィンドウ情報取得エラー: {str(e)}", file=sys.stderr)
+
+    def run(self):
+        """自動化を実行"""
+        start_time = time.time()
+
+        try:
+            # 工程1: 弥生販売26に接続
+            if not self.connect_to_yayoi():
+                return {
+                    'success': False,
+                    'message': '弥生販売26が起動していません。\n営業時間中は弥生販売26を起動しておいてください。'
+                }
+
+            # デバッグ用：ウィンドウ情報を出力
+            self.print_window_info()
+
+            # 工程2: インポートメニューまでナビゲート
+            if not self.navigate_to_import_menu():
+                return {
+                    'success': False,
+                    'message': 'インポートメニューへのナビゲーションに失敗しました。'
+                }
+
+            # 工程3: 顧客台帳インポートダイアログを開く
+            if not self.open_customer_import_dialog():
+                return {
+                    'success': False,
+                    'message': '顧客台帳インポートダイアログを開けませんでした。\n\n現在は開発中のため、弥生販売26のメニュー構造を調査しています。'
+                }
+
+            end_time = time.time()
+            duration = end_time - start_time
+
+            return {
+                'success': True,
+                'message': f'顧客台帳インポート画面を開きました（{duration:.2f}秒）',
+                'duration': duration
+            }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'message': f'エラーが発生しました: {str(e)}'
+            }
+
+if __name__ == '__main__':
+    automation = YayoiCustomerImportAutomation()
+    result = automation.run()
+
+    # 結果をJSON形式で出力
+    print(json.dumps(result, ensure_ascii=False))
