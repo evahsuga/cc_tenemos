@@ -622,21 +622,23 @@ ipcMain.handle('run-yayoi-customer-import', async (event) => {
   return new Promise((resolve, reject) => {
     console.log('弥生販売 顧客台帳インポート自動化を開始...');
 
-    // Pythonスクリプトを実行
+    // Pythonスクリプトを実行（UTF-8エンコーディングを明示的に指定）
     const pythonCommand = os.platform() === 'win32' ? 'python' : 'python3';
-    const python = spawn(pythonCommand, ['automation-yayoi-import-customer.py']);
+    const python = spawn(pythonCommand, ['automation-yayoi-import-customer.py'], {
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    });
 
     let result = '';
     let stderrOutput = '';
 
     python.stdout.on('data', (data) => {
-      const output = data.toString();
+      const output = data.toString('utf8');
       console.log('[Python stdout]:', output);
       result += output;
     });
 
     python.stderr.on('data', (data) => {
-      const output = data.toString();
+      const output = data.toString('utf8');
       console.error('[Python stderr]:', output);
       stderrOutput += output;
     });
