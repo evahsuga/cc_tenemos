@@ -94,7 +94,8 @@ ColorMe       Yayoi Sales     │
 **Automation Modules**:
 - `automation-coloreme-existing-browser.js` - Active ColorMe automation (connects to existing Chrome)
 - `automation-coloreme.js` - Original prototype (launches new browser instance)
-- `automation-yayoi.py` - Yayoi Sales Windows automation
+- `automation-yayoi.py` - Yayoi Sales Windows automation (original prototype)
+- `automation-yayoi-import-customer.py` - Yayoi Sales customer import automation (Step 6, active development)
 
 **Launchers**:
 - `起動.bat` - Windows launcher with git auto-update
@@ -307,6 +308,77 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Integrate with Step 3 (web app) for customer verification
 - Develop Step 6-7 (Yayoi import automation)
 
+### Step 6 Yayoi Customer Import - Partial Automation (2026-01-14)
+
+**Achievement**: Automated navigation to Yayoi Sales import menu (台帳インポート)
+
+**File**: `automation-yayoi-import-customer.py` (New Python script for customer ledger import)
+
+**Execution Flow** (Current implementation):
+1. Connect to running Yayoi Sales application (~2 seconds)
+   - Search by window title: プロフェッショナル → スタンダード → 管理者
+   - Actual window: "弥生販売 プロフェッショナル - 株式会社テネモスネット - 管理者"
+2. Activate main window (0.5 seconds)
+3. Open File menu: Alt+F (1 second)
+4. Select Import: I key (1.5 seconds)
+5. Select Ledger Import: A key (1.5 seconds)
+6. Verify import dialog opened (2 seconds)
+
+**Total execution time**: ~8-9 seconds to reach import dialog
+
+**Key Technical Solutions**:
+
+1. **UTF-8 Encoding (Windows character corruption fix)**:
+   ```python
+   # Python side
+   sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+   sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+   # Node.js side
+   const python = spawn('python', ['automation-yayoi-import-customer.py'], {
+     env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+   });
+   python.stdout.on('data', (data) => {
+     const output = data.toString('utf8');
+   });
+   ```
+
+2. **Multiple Window Disambiguation**:
+   - Problem: Multiple windows match ".*弥生販売.*" pattern
+   - Solution: Try specific patterns in order (プロフェッショナル → スタンダード → 管理者)
+   - Ensures correct main window selection
+
+3. **Access Key Navigation**:
+   - Alt+F → File menu
+   - I → Import (インポート)
+   - A → Ledger Import (台帳インポート)
+   - Faster and more reliable than visual element search
+
+**Prerequisites**:
+- Python 3.x installed and in PATH
+- pywinauto: `pip install pywinauto`
+- Yayoi Sales application must be running
+- Version: Works with Yayoi プロフェッショナル版
+
+**Integration**:
+- IPC Handler: `run-yayoi-customer-import` in main.js
+- API: `window.api.runYayoiCustomerImport()` in preload.js
+- UI: Step 6 button in business_flow_dashboard.html
+- Badge states: 開発中 → 実行中 → 完了
+
+**Next Steps** (Pending implementation):
+- Select "顧客台帳" (Customer Ledger) from import dialog
+- Browse and select CSV file
+- Execute import
+- Handle import completion/error dialog
+- Return success/failure status to Electron app
+
+**Current Status**:
+- ✅ Connection to Yayoi Sales
+- ✅ Navigation to import menu
+- ✅ UTF-8 encoding fix
+- ⏳ Import dialog interaction (next phase - screenshot-based development)
+
 ### Working with Yayoi Automation (Windows Only)
 
 - Requires Python 3 + pywinauto installed
@@ -364,10 +436,14 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 - ✅ Git-based auto-update launchers
 - ✅ Comprehensive error handling and logging
 
-**In Development**:
-- 🔨 Yayoi automation (Steps 6-7) - NEXT TARGET
-  - Customer ledger import
-  - Sales slip import
+**In Development (2026-01-14)**:
+- 🔨 **Yayoi automation (Step 6)** - IN PROGRESS
+  - ✅ Connection to Yayoi Sales application
+  - ✅ Navigation to import menu (ファイル → インポート → 台帳インポート)
+  - ✅ UTF-8 encoding fix for Windows
+  - ⏳ Import dialog interaction (screenshot-based development next)
+  - ⏳ CSV file selection and import execution
+- 📋 Yayoi automation (Step 7) - Sales slip import
 - Configuration system
 - Advanced error recovery
 
