@@ -47,6 +47,49 @@ function checkChromeDebugRunning(verbose = false) {
   });
 }
 
+// 既存のChromeプロセスを終了
+function killExistingChrome() {
+  return new Promise((resolve) => {
+    const platform = os.platform();
+    let killCommand;
+
+    if (platform === 'win32') {
+      // Windows: taskkill
+      killCommand = spawn('taskkill', ['/F', '/IM', 'chrome.exe'], {
+        stdio: 'ignore'
+      });
+    } else if (platform === 'darwin') {
+      // macOS: killall
+      killCommand = spawn('killall', ['Google Chrome'], {
+        stdio: 'ignore'
+      });
+    } else {
+      // Linux: killall
+      killCommand = spawn('killall', ['chrome'], {
+        stdio: 'ignore'
+      });
+    }
+
+    killCommand.on('close', (code) => {
+      // エラーコード1は「プロセスが見つからない」なので正常とみなす
+      if (code === 0 || code === 1 || code === 128) {
+        console.log('✓ 既存Chromeプロセスのクリーンアップ完了');
+        resolve(true);
+      } else {
+        console.log('既存Chromeプロセスのクリーンアップ（エラーコード:', code, '）');
+        resolve(true); // エラーでも続行
+      }
+    });
+
+    // タイムアウト設定（3秒）
+    setTimeout(() => {
+      killCommand.kill();
+      console.log('✓ 既存Chromeプロセスのクリーンアップ完了（タイムアウト）');
+      resolve(true);
+    }, 3000);
+  });
+}
+
 // Chromeをデバッグモードで起動（カラーミーログインページを開く）
 function startChromeDebug() {
   return new Promise((resolve, reject) => {
@@ -224,6 +267,11 @@ ipcMain.handle('run-coloreme-download', async (event) => {
     if (!isRunning) {
       // 起動していない場合は自動起動
       try {
+        // Chrome起動前に既存プロセスを終了
+        console.log('既存のChromeプロセスをクリーンアップしています...');
+        await killExistingChrome();
+        console.log('');
+
         await startChromeDebug();
 
         // デバッグポートが準備できるまで待つ（最大20回リトライ、2秒間隔）
