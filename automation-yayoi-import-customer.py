@@ -20,16 +20,16 @@ class YayoiCustomerImportAutomation:
         self.main_window = None
 
     def connect_to_yayoi(self):
-        """弥生販売26に接続"""
+        """弥生販売に接続"""
         try:
-            print("弥生販売26に接続しています...", file=sys.stderr)
-            # 既に起動している弥生販売26に接続
-            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*26.*", timeout=10)
-            self.main_window = self.app.window(title_re=".*弥生販売.*26.*")
-            print(f"✓ 弥生販売26に接続しました: {self.main_window.window_text()}", file=sys.stderr)
+            print("弥生販売に接続しています...", file=sys.stderr)
+            # 既に起動している弥生販売に接続（バージョン番号は問わない）
+            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=10)
+            self.main_window = self.app.window(title_re=".*弥生販売.*")
+            print(f"✓ 弥生販売に接続しました: {self.main_window.window_text()}", file=sys.stderr)
             return True
         except ElementNotFoundError:
-            print("❌ 弥生販売26が起動していません", file=sys.stderr)
+            print("❌ 弥生販売が起動していません", file=sys.stderr)
             return False
         except Exception as e:
             print(f"❌ 接続エラー: {str(e)}", file=sys.stderr)
@@ -92,7 +92,7 @@ class YayoiCustomerImportAutomation:
     def print_window_info(self):
         """デバッグ用：ウィンドウ情報を出力"""
         try:
-            print("\n=== 弥生販売26 ウィンドウ情報 ===", file=sys.stderr)
+            print("\n=== 弥生販売 ウィンドウ情報 ===", file=sys.stderr)
             print(f"タイトル: {self.main_window.window_text()}", file=sys.stderr)
             print(f"クラス名: {self.main_window.class_name()}", file=sys.stderr)
 
@@ -119,11 +119,11 @@ class YayoiCustomerImportAutomation:
         start_time = time.time()
 
         try:
-            # 工程1: 弥生販売26に接続
+            # 工程1: 弥生販売に接続
             if not self.connect_to_yayoi():
                 return {
                     'success': False,
-                    'message': '弥生販売26が起動していません。\n営業時間中は弥生販売26を起動しておいてください。'
+                    'message': '弥生販売が起動していません。\n営業時間中は弥生販売を起動しておいてください。'
                 }
 
             # デバッグ用：ウィンドウ情報を出力
@@ -140,7 +140,7 @@ class YayoiCustomerImportAutomation:
             if not self.open_customer_import_dialog():
                 return {
                     'success': False,
-                    'message': '顧客台帳インポートダイアログを開けませんでした。\n\n現在は開発中のため、弥生販売26のメニュー構造を調査しています。'
+                    'message': '顧客台帳インポートダイアログを開けませんでした。\n\n現在は開発中のため、弥生販売のメニュー構造を調査しています。'
                 }
 
             end_time = time.time()
