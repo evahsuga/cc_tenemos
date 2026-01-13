@@ -67,12 +67,12 @@ class YayoiCustomerImportAutomation:
             self.main_window.type_keys("%f")  # Alt+F
             time.sleep(1.0)
 
-            # 下矢印キーで「インポート」まで移動してEnter
-            # ※実際の弥生販売26のメニュー位置に応じて調整が必要
+            # 「インポート(I)」を選択（アクセスキーがIなのでIキーを押す）
             print("インポートメニューを選択しています...", file=sys.stderr)
-            # 一般的に「インポート」はファイルメニューの中ほどにある想定
-            # 実際の位置を調べて調整する必要があります
+            self.main_window.type_keys("i")  # I キー
+            time.sleep(1.5)
 
+            print("✓ インポートメニューを開きました", file=sys.stderr)
             return True
 
         except Exception as e:
@@ -82,10 +82,7 @@ class YayoiCustomerImportAutomation:
     def open_customer_import_dialog(self):
         """顧客台帳インポートダイアログを開く"""
         try:
-            print("顧客台帳インポートダイアログを開いています...", file=sys.stderr)
-
-            # インポートメニューから「顧客台帳」を選択
-            # ※実際のメニュー構造に応じて調整が必要
+            print("\n顧客台帳インポートダイアログを確認しています...", file=sys.stderr)
 
             # インポートダイアログが開くまで待機
             time.sleep(2.0)
@@ -94,9 +91,38 @@ class YayoiCustomerImportAutomation:
             try:
                 import_dialog = self.app.window(title_re=".*インポート.*", timeout=5)
                 print(f"✓ インポートダイアログを開きました: {import_dialog.window_text()}", file=sys.stderr)
+
+                # ダイアログの情報を出力（次のステップの実装のため）
+                print("\n=== インポートダイアログ情報 ===", file=sys.stderr)
+                print(f"タイトル: {import_dialog.window_text()}", file=sys.stderr)
+                print(f"クラス名: {import_dialog.class_name()}", file=sys.stderr)
+
+                # ダイアログ内のコントロールを列挙
+                try:
+                    print("\n=== ダイアログ内のコントロール ===", file=sys.stderr)
+                    import_dialog.print_control_identifiers(depth=2, filename=None)
+                except Exception as e:
+                    print(f"コントロール列挙エラー: {str(e)}", file=sys.stderr)
+
                 return True
             except:
-                print("インポートダイアログが見つかりませんでした", file=sys.stderr)
+                print("❌ インポートダイアログが見つかりませんでした", file=sys.stderr)
+                print("開いているウィンドウを確認します...", file=sys.stderr)
+
+                # 全てのウィンドウを列挙
+                try:
+                    from pywinauto import Desktop
+                    desktop = Desktop(backend="uia")
+                    windows = desktop.windows()
+                    print(f"\n現在開いているウィンドウ（{len(windows)}個）:", file=sys.stderr)
+                    for i, win in enumerate(windows[:10]):  # 最初の10個だけ表示
+                        try:
+                            print(f"  {i+1}. {win.window_text()}", file=sys.stderr)
+                        except:
+                            pass
+                except Exception as e:
+                    print(f"ウィンドウ列挙エラー: {str(e)}", file=sys.stderr)
+
                 return False
 
         except Exception as e:
