@@ -52,6 +52,7 @@ function killExistingChrome() {
   return new Promise((resolve) => {
     const platform = os.platform();
     let killCommand;
+    let resolved = false;
 
     if (platform === 'win32') {
       // Windows: taskkill
@@ -71,9 +72,12 @@ function killExistingChrome() {
     }
 
     killCommand.on('close', (code) => {
+      if (resolved) return;
+      resolved = true;
+
       // エラーコード1は「プロセスが見つからない」なので正常とみなす
       if (code === 0 || code === 1 || code === 128) {
-        console.log('✓ 既存Chromeプロセスのクリーンアップ完了');
+        console.log('✓ 既存Chromeプロセスのクリーンアップ完了（コード:', code, '）');
         resolve(true);
       } else {
         console.log('既存Chromeプロセスのクリーンアップ（エラーコード:', code, '）');
@@ -81,12 +85,25 @@ function killExistingChrome() {
       }
     });
 
-    // タイムアウト設定（3秒）
+    killCommand.on('error', (err) => {
+      if (resolved) return;
+      resolved = true;
+      console.log('既存Chromeプロセスのクリーンアップ（エラー:', err.message, '）');
+      resolve(true); // エラーでも続行
+    });
+
+    // タイムアウト設定（2秒）
     setTimeout(() => {
-      killCommand.kill();
+      if (resolved) return;
+      resolved = true;
+      try {
+        killCommand.kill();
+      } catch (e) {
+        // ignore
+      }
       console.log('✓ 既存Chromeプロセスのクリーンアップ完了（タイムアウト）');
       resolve(true);
-    }, 3000);
+    }, 2000);
   });
 }
 
@@ -272,6 +289,11 @@ ipcMain.handle('run-coloreme-download', async (event) => {
         // Chrome起動前に既存プロセスを終了
         console.log('既存のChromeプロセスをクリーンアップしています...');
         await killExistingChrome();
+
+        // プロセスが完全に終了するまで追加待機
+        console.log('プロセス終了完了を待っています...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log('✓ プロセス終了完了');
         console.log('');
 
         await startChromeDebug();
