@@ -191,7 +191,12 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 The dashboard implements a 15-step order-to-shipping workflow divided into 4 phases:
 
 **Phase 1: Order Processing** (Steps 1-3)
-- Step 2 is fully automated (ColorMe sales slip CSV download)
+- Step 2 is **fully automated** (ColorMe sales slip CSV download)
+  - One-click execution: Chrome startup → Login → CSV download
+  - Downloads to: `C:\Users\user\Downloads\sales_all.csv`
+  - Automatic Chrome debug mode management
+  - Automatic login with saved credentials
+  - Fully unattended operation
 
 **Phase 2: Payment & Documents** (Steps 4-5)
 - Semi-automated via external web app
@@ -204,9 +209,14 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Planned for future implementation (PowerAutomate)
 
 ### Current Implementation Status
-- ✅ Step 2: Fully automated
-- 🔨 Steps 6-7: Under development
-- 📋 Steps 9-15: Planned
+- ✅ **Step 2: Fully automated and production-ready** (2026-01-14)
+  - Complete automation: Chrome launch → Login → CSV download
+  - Fixed IPv6/IPv4 connection issue (localhost → 127.0.0.1)
+  - Automatic Chrome process cleanup before startup
+  - Robust debug port connection with retry mechanism
+  - Output file: `C:\Users\user\Downloads\sales_all.csv`
+- 🔨 Steps 6-7: Next development target (Yayoi import automation)
+- 📋 Steps 9-15: Planned (PowerAutomate)
 
 ## Development Guidelines
 
@@ -228,10 +238,74 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 
 ### Working with ColorMe Automation
 
+**Architecture:**
 - Uses `puppeteer-extra-plugin-stealth` to avoid bot detection
 - Always connect to existing browser via `puppeteer.connect()`, never `puppeteer.launch()`
 - Download path is set via CDP: `Page.setDownloadBehavior`
 - Wait for `networkidle2` and add 2-second delays for stability
+
+**Critical Implementation Details (Step 2 - Completed 2026-01-14):**
+
+1. **Chrome Process Management:**
+   - Automatically kills existing Chrome processes before startup (`taskkill /F /IM chrome.exe`)
+   - 3-second wait after process cleanup to ensure complete termination
+   - Launches Chrome with `--remote-debugging-port=9222`
+   - 8-second wait for Chrome startup completion
+
+2. **IPv6/IPv4 Connection Fix:**
+   - **CRITICAL**: Use `127.0.0.1:9222` instead of `localhost:9222`
+   - Windows may resolve `localhost` to IPv6 (`::1`), but Chrome listens on IPv4 only
+   - This caused ECONNREFUSED errors until fixed
+
+3. **Automated Login Flow:**
+   - Opens `https://admin.shop-pro.jp/` (login page)
+   - Waits 3 seconds for password autofill
+   - Automatically finds and clicks login button (multiple selector strategies)
+   - Waits 5 seconds for login completion
+
+4. **CSV Download Flow:**
+   - Navigates to menu page → data download page
+   - Selects data type: "9" (受注一括データ)
+   - Checks exclusion checkboxes: `#except_shipped`, `#sales_all_except_shipped`
+   - Executes download via `jf_ProductDownloadSubmit(0)`
+   - Output: `C:\Users\user\Downloads\sales_all.csv`
+
+5. **Retry Mechanism:**
+   - Debug port connection: 20 retries × 2 seconds = 40 seconds max wait
+   - Detailed logging at attempts 1, 10, and 19 for diagnostics
+
+### Step 2 Complete Automation - Production Ready (2026-01-14)
+
+**Achievement**: Full automation from button click to CSV download completion
+
+**Execution Flow** (Total ~60 seconds):
+1. Kill existing Chrome processes (2 seconds)
+2. Wait for process cleanup (3 seconds)
+3. Launch Chrome in debug mode (8 seconds)
+4. Connect to debug port (immediate if successful, up to 40 seconds with retry)
+5. Navigate to login page (2 seconds)
+6. Wait for password autofill (3 seconds)
+7. Auto-click login button (immediate)
+8. Wait for login completion (5 seconds)
+9. Navigate to download page (2 seconds)
+10. Select data type and options (1 second)
+11. Execute download (2 seconds)
+
+**Output File**:
+- Path: `C:\Users\user\Downloads\sales_all.csv`
+- Format: ColorMe sales slip data (受注一括データ)
+- Note: Multiple downloads create numbered files: `sales_all (1).csv`, `sales_all (2).csv`, etc.
+
+**Key Success Factors**:
+- IPv6/IPv4 fix (`127.0.0.1` instead of `localhost`)
+- Automatic Chrome process cleanup before launch
+- Sufficient wait times at each step
+- Robust error handling with detailed logging
+
+**Next Steps**:
+- File management: Auto-delete old `sales_all.csv` before download to prevent numbered duplicates
+- Integrate with Step 3 (web app) for customer verification
+- Develop Step 6-7 (Yayoi import automation)
 
 ### Working with Yayoi Automation (Windows Only)
 
@@ -277,22 +351,30 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 
 **Phase**: Phase 2 (Main Implementation) - In Progress
 
-**Completed**:
-- Electron app structure
-- Chrome debug mode integration
-- ColorMe CSV download automation (Step 2)
-- Dashboard UI with workflow visualization
-- Git-based auto-update launchers
+**Completed (2026-01-14)**:
+- ✅ Electron app structure
+- ✅ Chrome debug mode integration with automatic process management
+- ✅ **ColorMe CSV download full automation (Step 2)** - PRODUCTION READY
+  - One-click operation from Chrome launch to CSV download
+  - Automatic login with saved credentials
+  - Fixed IPv6/IPv4 connection issue (localhost → 127.0.0.1)
+  - Robust retry mechanism (40-second max wait)
+  - Output: `C:\Users\user\Downloads\sales_all.csv`
+- ✅ Dashboard UI with workflow visualization
+- ✅ Git-based auto-update launchers
+- ✅ Comprehensive error handling and logging
 
 **In Development**:
-- Yayoi automation (Steps 6-7)
+- 🔨 Yayoi automation (Steps 6-7) - NEXT TARGET
+  - Customer ledger import
+  - Sales slip import
 - Configuration system
-- Error handling improvements
+- Advanced error recovery
 
 **Planned**:
-- Steps 9-15 automation
-- Logging system
-- Retry mechanisms
+- Steps 9-15 automation (PowerAutomate integration)
+- File management system (auto-cleanup, archiving)
+- Execution history logging
 
 ## Important Notes
 
@@ -355,9 +437,34 @@ taskkill /F /IM chrome.exe             # Windows
 ```
 
 ### Puppeteer Connection Failures
+
+**CRITICAL FIX (2026-01-14): IPv6/IPv4 Connection Issue**
+
+**Problem**: ECONNREFUSED error when connecting to debug port, even though Chrome is running with `--remote-debugging-port=9222`
+
+**Root Cause**:
+- Chrome listens on `127.0.0.1:9222` (IPv4)
+- Windows may resolve `localhost` to `::1` (IPv6)
+- IPv6 client → IPv4 server = connection refused
+
+**Solution**:
+- **Always use `127.0.0.1:9222` instead of `localhost:9222`**
+- Changed in: `main.js`, `automation-coloreme-existing-browser.js`
+
+**Diagnosis**:
+```bash
+# Check Chrome debug port (should show JSON response)
+curl http://127.0.0.1:9222/json/version
+
+# Check Chrome stderr output for confirmation
+# Should see: "DevTools listening on ws://127.0.0.1:9222/..."
+```
+
+**Other common issues**:
 - Ensure Chrome is launched with correct `--remote-debugging-port=9222`
 - Check `--user-data-dir` path is writable
-- Verify no firewall blocking localhost:9222
+- Verify no firewall blocking port 9222
+- Kill all Chrome processes before starting (`taskkill /F /IM chrome.exe`)
 
 ### pywinauto Element Not Found
 Use inspection script to discover elements:
