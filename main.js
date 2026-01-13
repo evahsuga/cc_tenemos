@@ -202,11 +202,104 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       try {
         await startChromeDebug();
 
-        // Chromeが開いてログインページが表示されたらユーザーにログインを促す
-        return {
-          success: false,
-          message: 'Chromeを起動し、カラーミーショップのログインページを開きました。\n\nパスワードが自動入力されている場合は、ログインボタンをクリックしてログインしてください。\n\nログイン後に再度このボタンをクリックしてください。'
-        };
+        // Chrome起動後、Puppeteerで接続して自動ログインを試みる
+        const connected = await automation.connectToExistingBrowser();
+
+        if (!connected) {
+          return {
+            success: false,
+            message: 'Chromeへの接続に失敗しました。\n再度ボタンをクリックしてください。'
+          };
+        }
+
+        // カラーミーログインページが開いているか確認
+        const currentUrl = automation.page.url();
+        console.log('起動後のURL:', currentUrl);
+
+        // パスワード自動入力を待つ
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // ログインボタンを探してクリック
+        try {
+          console.log('ログインボタンを探しています...');
+
+          // 方法1: よくあるセレクタを試す
+          const loginButtonSelectors = [
+            'button[type="submit"]',
+            'input[type="submit"]',
+            '.login-button',
+            '#login-button',
+            'button.btn-login'
+          ];
+
+          let buttonClicked = false;
+
+          // まず標準的なセレクタを試す
+          for (const selector of loginButtonSelectors) {
+            try {
+              const button = await automation.page.$(selector);
+              if (button) {
+                console.log(`ログインボタンを発見: ${selector}`);
+                await automation.page.click(selector);
+                buttonClicked = true;
+                console.log('✓ ログインボタンをクリックしました');
+                break;
+              }
+            } catch (e) {
+              // 次のセレクタを試す
+              continue;
+            }
+          }
+
+          // 方法2: テキストで検索（セレクタで見つからない場合）
+          if (!buttonClicked) {
+            console.log('テキストでログインボタンを探しています...');
+            buttonClicked = await automation.page.evaluate(() => {
+              const buttons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'));
+              const loginButton = buttons.find(btn => {
+                const text = btn.textContent || btn.value || '';
+                return text.includes('ログイン') || text.includes('login') || text.includes('Login');
+              });
+
+              if (loginButton) {
+                loginButton.click();
+                return true;
+              }
+              return false;
+            });
+
+            if (buttonClicked) {
+              console.log('✓ ログインボタンをクリックしました（テキスト検索）');
+            }
+          }
+
+          if (!buttonClicked) {
+            await automation.disconnect();
+            return {
+              success: false,
+              message: 'ログインボタンが見つかりませんでした。\n手動でログインボタンをクリックし、ログイン後に再度このボタンをクリックしてください。'
+            };
+          }
+
+          // ログイン完了を待つ（ページ遷移を待機）
+          await new Promise(resolve => setTimeout(resolve, 5000));
+
+          await automation.disconnect();
+
+          return {
+            success: false,
+            message: 'ログインが完了しました。\n\n再度このボタンをクリックして、CSVダウンロードを実行してください。'
+          };
+
+        } catch (error) {
+          console.error('ログインボタンクリックエラー:', error.message);
+          await automation.disconnect();
+          return {
+            success: false,
+            message: '自動ログインに失敗しました。\n手動でログインボタンをクリックし、ログイン後に再度このボタンをクリックしてください。'
+          };
+        }
+
       } catch (error) {
         return {
           success: false,
