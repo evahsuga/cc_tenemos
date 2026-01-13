@@ -79,6 +79,22 @@ class YayoiCustomerImportAutomation:
             print(f"❌ ナビゲーションエラー: {str(e)}", file=sys.stderr)
             return False
 
+    def select_ledger_import(self):
+        """台帳インポート(A)を選択"""
+        try:
+            print("\n台帳インポート(A)を選択しています...", file=sys.stderr)
+
+            # 「台帳インポート(A)」を選択（アクセスキーがAなのでAキーを押す）
+            self.main_window.type_keys("a")  # A キー
+            time.sleep(1.5)
+
+            print("✓ 台帳インポートを選択しました", file=sys.stderr)
+            return True
+
+        except Exception as e:
+            print(f"❌ 台帳インポート選択エラー: {str(e)}", file=sys.stderr)
+            return False
+
     def open_customer_import_dialog(self):
         """顧客台帳インポートダイアログを開く"""
         try:
@@ -176,7 +192,14 @@ class YayoiCustomerImportAutomation:
                     'message': 'インポートメニューへのナビゲーションに失敗しました。'
                 }
 
-            # 工程3: 顧客台帳インポートダイアログを開く
+            # 工程3: 台帳インポート(A)を選択
+            if not self.select_ledger_import():
+                return {
+                    'success': False,
+                    'message': '台帳インポートの選択に失敗しました。'
+                }
+
+            # 工程4: 顧客台帳インポートダイアログを開く
             if not self.open_customer_import_dialog():
                 return {
                     'success': False,
