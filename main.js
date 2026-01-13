@@ -9,17 +9,38 @@ let mainWindow;
 let chromeProcess = null;
 
 // Chromeデバッグモードが起動しているか確認
-function checkChromeDebugRunning() {
+function checkChromeDebugRunning(verbose = false) {
   return new Promise((resolve) => {
+    if (verbose) {
+      console.log('デバッグポートチェック: http://localhost:9222/json/version にアクセス中...');
+    }
+
     const req = http.get('http://localhost:9222/json/version', (res) => {
-      resolve(true);
+      if (verbose) {
+        console.log('✓ デバッグポート応答あり (status:', res.statusCode, ')');
+      }
+
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (verbose) {
+          console.log('デバッグポート情報:', data);
+        }
+        resolve(true);
+      });
     });
 
-    req.on('error', () => {
+    req.on('error', (err) => {
+      if (verbose) {
+        console.log('❌ デバッグポート接続エラー:', err.code || err.message);
+      }
       resolve(false);
     });
 
     req.setTimeout(2000, () => {
+      if (verbose) {
+        console.log('❌ デバッグポート接続タイムアウト (2秒)');
+      }
       req.destroy();
       resolve(false);
     });
@@ -207,24 +228,51 @@ ipcMain.handle('run-coloreme-download', async (event) => {
 
         // デバッグポートが準備できるまで待つ（最大20回リトライ、2秒間隔）
         console.log('Chromeデバッグポートの準備を待っています...');
+        console.log('');
+
         let retryCount = 0;
         let debugPortReady = false;
-        while (retryCount < 20 && !debugPortReady) {
-          debugPortReady = await checkChromeDebugRunning();
-          if (!debugPortReady) {
-            console.log(`リトライ ${retryCount + 1}/20...`);
+
+        // 最初の試行は詳細ログ付き
+        console.log('=== 初回接続試行（詳細ログ） ===');
+        debugPortReady = await checkChromeDebugRunning(true);
+        console.log('');
+
+        if (!debugPortReady) {
+          // 通常のリトライループ
+          while (retryCount < 19 && !debugPortReady) {
+            console.log(`リトライ ${retryCount + 1}/19...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
             retryCount++;
-          } else {
-            console.log('✓ デバッグポート接続成功！');
+
+            // 10回目と19回目は詳細ログ
+            const verbose = (retryCount === 10 || retryCount === 19);
+            if (verbose) {
+              console.log('=== 詳細ログ ===');
+            }
+            debugPortReady = await checkChromeDebugRunning(verbose);
+            if (verbose) {
+              console.log('');
+            }
           }
+        }
+
+        if (debugPortReady) {
+          console.log('✓ デバッグポート接続成功！');
+          console.log('');
         }
 
         if (!debugPortReady) {
           console.error('❌ デバッグポートへの接続に失敗しました');
+          console.error('');
+          console.error('対処方法：');
+          console.error('1. タスクマネージャーを開く（Ctrl+Shift+Esc）');
+          console.error('2. すべてのChromeプロセスを終了する');
+          console.error('3. 再度ボタンをクリックする');
+          console.error('');
           return {
             success: false,
-            message: 'Chromeデバッグポートの準備が完了しませんでした（40秒タイムアウト）。\n\nChromeを手動で閉じて、再度ボタンをクリックしてください。'
+            message: 'Chromeデバッグポートへの接続に失敗しました（40秒タイムアウト）。\n\n対処方法：\n1. タスクマネージャー（Ctrl+Shift+Esc）を開く\n2. すべてのChromeプロセスを終了\n3. 再度ボタンをクリック\n\n※既存のChromeが起動していると、デバッグモードで起動できません。'
           };
         }
 
