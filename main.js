@@ -147,10 +147,12 @@ function startChromeDebug() {
       console.log('✓ Chrome起動コマンド実行完了');
       console.log('✓ カラーミーログインページを開きました');
 
-      // すぐにresolve（デバッグポート準備待ちは別途行う）
+      // Chrome起動完了を待つ（デバッグポートが開くまで待機）
+      console.log('Chromeの起動を待っています...');
       setTimeout(() => {
+        console.log('✓ Chrome起動待機完了');
         resolve(true);
-      }, 2000);
+      }, 8000);
 
     } catch (error) {
       console.error('❌ Chrome起動失敗:', error.message);
