@@ -8,6 +8,11 @@ from pywinauto.findwindows import ElementNotFoundError
 import sys
 import json
 import time
+import io
+
+# 標準出力・標準エラー出力をUTF-8に設定（Windows文字化け対策）
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 class YayoiCustomerImportAutomation:
     def __init__(self):
