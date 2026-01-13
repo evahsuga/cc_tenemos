@@ -11,7 +11,7 @@ class ColorMeExistingBrowserAutomation {
     this.page = null;
   }
 
-  async connectToExistingBrowser(browserURL = 'http://localhost:9222') {
+  async connectToExistingBrowser(browserURL = 'http://127.0.0.1:9222') {
     console.log('既存のChromeブラウザに接続しています...');
 
     try {

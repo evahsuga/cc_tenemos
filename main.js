@@ -12,10 +12,10 @@ let chromeProcess = null;
 function checkChromeDebugRunning(verbose = false) {
   return new Promise((resolve) => {
     if (verbose) {
-      console.log('デバッグポートチェック: http://localhost:9222/json/version にアクセス中...');
+      console.log('デバッグポートチェック: http://127.0.0.1:9222/json/version にアクセス中...');
     }
 
-    const req = http.get('http://localhost:9222/json/version', (res) => {
+    const req = http.get('http://127.0.0.1:9222/json/version', (res) => {
       if (verbose) {
         console.log('✓ デバッグポート応答あり (status:', res.statusCode, ')');
       }
