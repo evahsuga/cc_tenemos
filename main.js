@@ -156,7 +156,20 @@ function startChromeDebug() {
 
       chromeProcess = spawn(chromePath, args, {
         detached: true,
-        stdio: 'ignore'
+        stdio: 'pipe'  // 出力を確認できるように変更
+      });
+
+      // Chromeの出力をログに表示
+      chromeProcess.stdout.on('data', (data) => {
+        console.log('[Chrome stdout]:', data.toString().trim());
+      });
+
+      chromeProcess.stderr.on('data', (data) => {
+        console.log('[Chrome stderr]:', data.toString().trim());
+      });
+
+      chromeProcess.on('error', (err) => {
+        console.error('[Chrome起動エラー]:', err);
       });
 
       chromeProcess.unref();
