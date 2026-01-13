@@ -63,7 +63,7 @@ python automation-yayoi.py
 起動.bat
 ```
 
-**Note**: Launcher scripts automatically pull latest code from git and run `npm install` before starting.
+**Important**: Launcher scripts implement **automatic updates** - they pull latest code from git and run `npm install` on every launch. This ensures end users always run the latest version without manual intervention. See "Git Auto-Update Mechanism" section below.
 
 ## Architecture
 
@@ -104,6 +104,19 @@ ColorMe       Yayoi Sales     │
 - `config.example.json` - Template for credentials (copy to `config.json` for local use)
 - `package.json` - Dependencies and electron-builder config
 
+**Testing & Utility Scripts**:
+- `test-existing-browser.js` - Tests Chrome debug connection
+- `start-chrome-debug.js` - Standalone Chrome launcher for debugging
+- `find-download-button.js` - ColorMe selector debugging tool
+- `analyze-download-button.js` - ColorMe DOM analysis tool
+- `automation-coloreme-download.js`, `automation-coloreme-download-v2.js` - Development iterations
+- `coloreme-auto-download-final.js` - Final ColorMe download implementation
+
+**Documentation**:
+- `現場担当者向け_初回セットアップ.md` - End-user initial setup guide (first-run password persistence setup)
+- `development-plan.md` - Project development roadmap
+- `prototype-implementation-guide.md` - Implementation reference
+
 ### Chrome Debug Mode Architecture
 
 **Critical Design Pattern**: This application does NOT launch headless browsers. It connects to an existing Chrome instance running in debug mode.
@@ -123,6 +136,26 @@ ColorMe       Yayoi Sales     │
 - macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
 - Windows: `C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe`
 - Linux: `google-chrome`
+
+**Chrome Profile Persistence** (Critical Feature):
+
+The application uses a **persistent Chrome profile** via `--user-data-dir=~/.chrome-automation-profile`. This is essential for:
+
+1. **Password Autofill**: Users log into ColorMe once manually, Chrome saves credentials, future automations work without re-authentication
+2. **Session Persistence**: Login sessions survive app restarts
+3. **User Experience**: End users don't need to manage credentials or re-login
+
+**Initial Setup for End Users**:
+- First run: User logs into ColorMe manually in the debug Chrome instance
+- Chrome prompts to save password (or sync via Google Account)
+- All subsequent automation runs use saved credentials automatically
+- See `現場担当者向け_初回セットアップ.md` for detailed first-run instructions
+
+**Profile Location**:
+- macOS/Linux: `~/.chrome-automation-profile`
+- Windows: `C:\Users\[username]\.chrome-automation-profile`
+
+**Resetting Profile**: Delete the profile directory to start fresh (useful for troubleshooting)
 
 ### IPC Communication Pattern
 
@@ -272,10 +305,25 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 - Japanese file names are intentional (e.g., `起動.command`)
 - Avoid renaming launcher scripts (users expect these names)
 
-### Git Workflow
-- Launcher scripts auto-pull from master before starting
-- Test in separate branch before merging to master
-- Users will auto-update on next launch
+### Git Auto-Update Mechanism
+
+**Critical**: The launcher scripts (`起動.bat`, `起動.command`) implement **automatic updates** on every launch:
+
+1. **Git Pull**: `git pull` runs first to fetch latest code
+2. **Dependency Update**: `npm install` runs to sync dependencies
+3. **Launch**: Application starts with latest version
+
+**Implications**:
+- Users **never** manually update the application
+- Any commit to master branch is deployed on next user launch
+- Test thoroughly before merging to master
+- Use feature branches for development work
+- Consider the launcher scripts sacred - users depend on their file names and behavior
+
+**User Impact**:
+- Zero-maintenance updates for end users
+- Always running latest bug fixes and features
+- No version management complexity
 
 ### Dependencies
 - Keep Electron version aligned with Puppeteer compatibility
@@ -287,6 +335,12 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 - Yayoi automation is Windows-only (uses Windows UI Automation)
 - Test launchers on both macOS and Windows
 - Launcher scripts use `.command` (macOS) and `.bat` (Windows)
+
+### Initial Deployment
+- End users need one-time setup to enable Chrome password persistence
+- See `現場担当者向け_初回セットアップ.md` for step-by-step first-run instructions
+- After initial setup, automation runs unattended
+- Profile is stored in `~/.chrome-automation-profile` and persists across launches
 
 ## Troubleshooting
 
