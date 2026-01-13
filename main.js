@@ -26,7 +26,7 @@ function checkChromeDebugRunning() {
   });
 }
 
-// Chromeをデバッグモードで起動
+// Chromeをデバッグモードで起動（カラーミーログインページを開く）
 function startChromeDebug() {
   return new Promise((resolve, reject) => {
     console.log('Chromeデバッグモードを起動中...');
@@ -35,6 +35,7 @@ function startChromeDebug() {
     let args;
 
     const platform = os.platform();
+    const colorMeLoginUrl = 'https://admin.shop-pro.jp/';
 
     if (platform === 'darwin') {
       // macOS
@@ -43,7 +44,8 @@ function startChromeDebug() {
         '--remote-debugging-port=9222',
         '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
-        '--no-default-browser-check'
+        '--no-default-browser-check',
+        colorMeLoginUrl
       ];
     } else if (platform === 'win32') {
       // Windows
@@ -52,7 +54,8 @@ function startChromeDebug() {
         '--remote-debugging-port=9222',
         '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
-        '--no-default-browser-check'
+        '--no-default-browser-check',
+        colorMeLoginUrl
       ];
     } else {
       // Linux
@@ -61,7 +64,8 @@ function startChromeDebug() {
         '--remote-debugging-port=9222',
         '--user-data-dir=' + path.join(os.homedir(), '.chrome-automation-profile'),
         '--no-first-run',
-        '--no-default-browser-check'
+        '--no-default-browser-check',
+        colorMeLoginUrl
       ];
     }
 
@@ -74,11 +78,12 @@ function startChromeDebug() {
       chromeProcess.unref();
 
       console.log('✓ Chrome起動完了');
+      console.log('✓ カラーミーログインページを開きました');
 
-      // 起動完了を待つ
+      // 起動完了を待つ（ログインページの読み込みを待つため少し長めに）
       setTimeout(() => {
         resolve(true);
-      }, 3000);
+      }, 5000);
 
     } catch (error) {
       console.error('❌ Chrome起動失敗:', error.message);
@@ -197,10 +202,10 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       try {
         await startChromeDebug();
 
-        // Chromeが開いたらユーザーにログインを促す
+        // Chromeが開いてログインページが表示されたらユーザーにログインを促す
         return {
           success: false,
-          message: 'Chromeを起動しました。\n\nカラーミーショップのログインページを開きますので、\nログイン後に再度このボタンをクリックしてください。'
+          message: 'Chromeを起動し、カラーミーショップのログインページを開きました。\n\nパスワードが自動入力されている場合は、ログインボタンをクリックしてログインしてください。\n\nログイン後に再度このボタンをクリックしてください。'
         };
       } catch (error) {
         return {
