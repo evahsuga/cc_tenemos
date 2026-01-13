@@ -200,7 +200,7 @@ ipcMain.handle('run-coloreme-download', async (event) => {
         // Chromeが開いたらユーザーにログインを促す
         return {
           success: false,
-          message: 'Chromeを起動しました。\n\n次の手順を実行してください：\n1. 開いたChromeでカラーミーショップにログイン\n2. メニューページ (https://admin.shop-pro.jp/?mode=menu) に移動\n3. 再度このボタンをクリック'
+          message: 'Chromeを起動しました。\n\nカラーミーショップのログインページを開きますので、\nログイン後に再度このボタンをクリックしてください。'
         };
       } catch (error) {
         return {
@@ -220,11 +220,30 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       };
     }
 
-    // 現在のURLを確認
-    const currentUrl = automation.page.url();
+    // カラーミーショップのログインページを開く
+    console.log('カラーミーショップのログインページを開きます...');
+    await automation.navigateToPage('https://admin.shop-pro.jp/');
 
-    // メニューページに移動（必要な場合）
+    // ページ読み込みとパスワード自動入力を待つ
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // 現在のURLを確認してログイン状態をチェック
+    const currentUrl = automation.page.url();
+    console.log('現在のURL:', currentUrl);
+
+    // ログインページのままの場合は、ユーザーに手動ログインを促す
+    if (currentUrl.includes('admin.shop-pro.jp/login') ||
+        (!currentUrl.includes('mode=') && currentUrl.includes('admin.shop-pro.jp'))) {
+      await automation.disconnect();
+      return {
+        success: false,
+        message: 'カラーミーショップのログインページを開きました。\n\nパスワードが自動入力されている場合は、ログインボタンをクリックしてログインしてください。\nログイン後に再度このボタンをクリックしてください。'
+      };
+    }
+
+    // ログイン済みの場合は、メニューページに移動
     if (!currentUrl.includes('mode=menu')) {
+      console.log('メニューページに移動します...');
       await automation.navigateToPage('https://admin.shop-pro.jp/?mode=menu');
     }
 
