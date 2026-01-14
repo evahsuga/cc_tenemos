@@ -394,28 +394,51 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ Smart window selection (2026-01-14)
 - ⏳ Import dialog interaction (next phase - screenshot-based development)
 
-### Step 7 Yayoi Sales Slip Import - Partial Automation (2026-01-14)
+### Step 7 Yayoi Sales Slip Import - CSV File Selection Automation (2026-01-14 COMPLETED)
 
-**Achievement**: Automated navigation to Yayoi Sales import menu (伝票インポート)
+**Achievement**: Fully automated navigation from menu to CSV file selection screen
 
-**File**: `automation-yayoi-import-sales.py` (New Python script for sales slip import)
+**File**: `automation-yayoi-import-sales.py` (Python script for sales slip import)
 
-**Execution Flow** (Current implementation):
+**Execution Flow** (Complete implementation):
 1. Connect to running Yayoi Sales application (~2 seconds)
-   - Uses same smart window selection logic as Step 6
+   - Smart window selection logic (same as Step 6)
    - Priority-based selection ensures correct main window
 2. Activate main window (0.5 seconds)
 3. Open File menu: Alt+F (1 second)
 4. Select Import: I key (1.5 seconds)
-5. Select Slip Import: I key (1.5 seconds) - **Different from Step 6 (A key)**
-6. Verify import dialog opened (2 seconds)
+5. Select Transaction Import: B key (取引インポート) (3.5 seconds with wait)
+6. Click Next: Alt+N on wizard dialog (2 seconds)
+7. Select Slip Import (1): Default selected, no action needed (0.5 seconds)
+8. Click Next: Alt+N on wizard dialog (2 seconds)
+9. Select Sales Slip: Alt+D → HOME → DOWN×2 → ENTER (2 seconds)
+10. **CSV file selection screen displayed** ✅
 
-**Total execution time**: ~8-9 seconds to reach import dialog
+**Total execution time**: ~18 seconds to reach CSV file selection
 
-**Key Differences from Step 6**:
-- Step 6: 台帳インポート(A) → Customer ledger import
-- Step 7: 伝票インポート(I) → Sales slip import
-- Same window connection logic, different menu path
+**Key Technical Breakthroughs (2026-01-14)**:
+
+1. **Dialog Window Detection via Process**:
+   - **Problem**: "取引インポートウィザード" dialog has empty or invisible title
+   - **Failed Approach**: `Desktop().windows()` searches all windows globally → incorrectly selected Electron app window
+   - **Solution**: Use `self.app.windows()` to enumerate **only child windows of Yayoi process**
+   ```python
+   all_windows = self.app.windows()
+   for window in all_windows:
+       if window.handle != self.main_window.handle:
+           dialog_window = window  # Found the wizard dialog!
+   ```
+   - **Result**: Correctly identifies wizard dialogs even without visible titles
+
+2. **ComboBox Navigation for Sales Slip Selection**:
+   - ComboBox order: 見積書(0) → 受注伝票(1) → 売上伝票(2)
+   - Sequence: `Alt+D` (open combo) → `HOME` (go to first) → `DOWN×2` (move to sales slip) → `ENTER` (confirm)
+   - Default shows "見積書", must change to "売上伝票"
+
+3. **Default Selection Handling**:
+   - "伝票インポート(1)" radio button is pre-selected by default
+   - No action needed - sending "1" key was unnecessary and caused issues
+   - Simply proceed to next step
 
 **Prerequisites**:
 - Python 3.x installed and in PATH
@@ -429,19 +452,22 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - UI: Step 7 button in business_flow_dashboard.html
 - Badge states: 開発中 → 実行中 → 完了
 
-**Next Steps** (Pending implementation - prioritized over Step 6):
-- Select "売上伝票" (Sales Slip) from import dialog
-- Browse and select CSV file
-- Execute import
+**Next Steps** (Pending implementation):
+- Browse and select CSV file (参照ボタン)
+- Execute import (次へボタン)
 - Handle import completion/error dialog
 - Return success/failure status to Electron app
 
 **Current Status**:
 - ✅ Connection to Yayoi Sales
-- ✅ Navigation to import menu
+- ✅ Navigation to import menu (ファイル → インポート → 取引インポート)
 - ✅ UTF-8 encoding fix
-- ✅ Smart window selection (2026-01-14)
-- ⏳ Import dialog interaction (next phase - screenshot-based development)
+- ✅ Smart window selection
+- ✅ Wizard dialog detection via process enumeration **(CRITICAL FIX)**
+- ✅ Next button clicks (Alt+N on correct dialog)
+- ✅ Sales slip selection from combobox
+- ✅ **CSV file selection screen reached** (2026-01-14)
+- ⏳ CSV file browse and import execution (next phase)
 
 **Development Priority**: Step 7 is prioritized over Step 6 due to higher usage frequency in production workflow.
 
@@ -451,6 +477,44 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Uses `spawn('python', ['automation-yayoi.py', ...])` from Node.js
 - Selectors need customization per Yayoi installation
 - Uses UIA (UI Automation) backend for modern Windows apps
+
+**CRITICAL: Dialog Detection Pattern (2026-01-14)**
+
+Yayoi wizard dialogs often have **empty or invisible window titles**, making them impossible to find via `Desktop().windows()` with title-based search.
+
+**❌ WRONG Approach**:
+```python
+# This will find ALL windows including other apps!
+from pywinauto import Desktop
+desktop = Desktop(backend="uia")
+for window in desktop.windows():
+    if "インポート" in window.window_text():  # May match Electron app!
+        dialog = window
+```
+
+**✅ CORRECT Approach**:
+```python
+# Use self.app.windows() to enumerate ONLY Yayoi process windows
+all_windows = self.app.windows()
+for window in all_windows:
+    if window.handle != self.main_window.handle:
+        # This is a child dialog of Yayoi process
+        dialog_window = window
+        break
+```
+
+**Why this matters**:
+1. Wizard dialogs may have empty titles or special characters
+2. `Desktop().windows()` searches globally across all processes
+3. Can accidentally select wrong window (e.g., Electron app with "インポート" in title)
+4. `self.app.windows()` only searches windows belonging to Yayoi process
+5. Guarantees you're interacting with the correct application
+
+**Implementation Notes**:
+- Always use `self.app.windows()` for dialog detection
+- Filter by `window.handle != self.main_window.handle` to exclude main window
+- Send key inputs to the dialog window, not the main window
+- Main window becomes disabled when dialog is open (ElementNotEnabled error)
 
 ### Modifying Selectors
 
@@ -503,19 +567,22 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 - ✅ Comprehensive error handling and logging
 
 **In Development (2026-01-14)**:
-- 🔨 **Yayoi automation (Step 7 - Priority)** - IN PROGRESS
+- 🔨 **Yayoi automation (Step 7 - Priority)** - NEARLY COMPLETE
   - ✅ Connection to Yayoi Sales application
   - ✅ Smart window selection logic (handles main window only or with slip windows)
-  - ✅ Navigation to import menu (ファイル → インポート → 伝票インポート)
+  - ✅ Navigation to import menu (ファイル → インポート → 取引インポート)
   - ✅ UTF-8 encoding fix for Windows
-  - ⏳ Import dialog interaction (screenshot-based development next)
-  - ⏳ CSV file selection and import execution
-- 🔨 **Yayoi automation (Step 6)** - IN PROGRESS (lower priority)
+  - ✅ **Dialog detection via process enumeration (CRITICAL FIX)**
+  - ✅ **Wizard navigation (Next button clicks on correct dialog)**
+  - ✅ **Sales slip selection from combobox (Alt+D → HOME → DOWN×2 → ENTER)**
+  - ✅ **CSV file selection screen reached** (2026-01-14)
+  - ⏳ CSV file browse and import execution (final step)
+- 🔨 **Yayoi automation (Step 6)** - PARTIAL (lower priority)
   - ✅ Connection to Yayoi Sales application
   - ✅ Smart window selection logic (handles main window only or with slip windows)
   - ✅ Navigation to import menu (ファイル → インポート → 台帳インポート)
   - ✅ UTF-8 encoding fix for Windows
-  - ⏳ Import dialog interaction (screenshot-based development next)
+  - ⏳ Import dialog interaction (apply Step 7 learnings)
   - ⏳ CSV file selection and import execution
 - Configuration system
 - Advanced error recovery
