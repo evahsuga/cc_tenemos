@@ -159,25 +159,33 @@ class YayoiSalesImportAutomation:
         try:
             print(f"\n次へボタンをクリックしています... ({dialog_title})", file=sys.stderr)
 
-            # ダイアログを探してフォーカスを移す
+            # 弥生販売のプロセスに属するダイアログを探す
             dialog_window = None
             try:
-                from pywinauto import Desktop
-                desktop = Desktop(backend="uia")
+                # appオブジェクトから子ウィンドウを探す
+                if self.app:
+                    # 弥生販売アプリケーションの全ウィンドウを取得
+                    all_windows = self.app.windows()
+                    print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
 
-                # インポートウィザードを探す
-                for window in desktop.windows():
-                    try:
-                        title = window.window_text()
-                        if "インポート" in title or "ウィザード" in title:
-                            print(f"  → ダイアログ発見: {title}", file=sys.stderr)
-                            dialog_window = window
-                            break
-                    except:
-                        pass
+                    # メインウィンドウ以外のダイアログを探す
+                    for window in all_windows:
+                        try:
+                            # メインウィンドウではないものを探す
+                            if window.handle != self.main_window.handle:
+                                title = window.window_text() or "(タイトルなし)"
+                                class_name = window.class_name()
+                                print(f"  → 子ウィンドウ発見: [{title}] (Class: {class_name})", file=sys.stderr)
+
+                                # 最初に見つかったダイアログを使用
+                                if not dialog_window:
+                                    dialog_window = window
+                                    print(f"  → このウィンドウを使用します", file=sys.stderr)
+                        except:
+                            pass
 
                 if not dialog_window:
-                    print(f"  ⚠ ダイアログが見つかりません。メインウィンドウに送信します。", file=sys.stderr)
+                    print(f"  ⚠ ダイアログが見つかりません。グローバルにキー送信します。", file=sys.stderr)
             except Exception as e:
                 print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
 
@@ -210,42 +218,12 @@ class YayoiSalesImportAutomation:
         """伝票インポート（１）を選択"""
         try:
             print("\n伝票インポート（１）を選択しています...", file=sys.stderr)
+            print("  ※デフォルトで選択されているため、何もしません", file=sys.stderr)
 
-            # ダイアログを探す
-            dialog_window = None
-            try:
-                from pywinauto import Desktop
-                desktop = Desktop(backend="uia")
+            # 伝票インポート（１）はデフォルトで選択されているので、何もしない
+            time.sleep(0.5)
 
-                # ウィザードダイアログを探す（より広範囲に）
-                for window in desktop.windows():
-                    try:
-                        title = window.window_text()
-                        # 弥生販売メインウィンドウ以外で、タイトルがある小さいウィンドウを探す
-                        if title and title.strip() and "管理者" not in title:
-                            print(f"  → 候補ダイアログ: [{title}]", file=sys.stderr)
-                            dialog_window = window
-                            break
-                    except:
-                        pass
-            except Exception as e:
-                print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
-
-            # ダイアログまたはメインウィンドウに「1」キーを送信
-            if dialog_window:
-                dialog_window.set_focus()
-                time.sleep(0.5)
-                dialog_window.type_keys("1")
-                print(f"  → ダイアログに「1」を送信しました", file=sys.stderr)
-            else:
-                # グローバルに送信
-                import pywinauto.keyboard as keyboard
-                keyboard.send_keys("1")
-                print(f"  → グローバルに「1」を送信しました", file=sys.stderr)
-
-            time.sleep(1.0)
-
-            print("✓ 伝票インポート（１）を選択しました", file=sys.stderr)
+            print("✓ 伝票インポート（１）はすでに選択されています", file=sys.stderr)
             return True
 
         except Exception as e:
@@ -259,24 +237,29 @@ class YayoiSalesImportAutomation:
         try:
             print("\n売上伝票を選択しています...", file=sys.stderr)
 
-            # ダイアログを探す
+            # 弥生販売のプロセスに属するダイアログを探す
             dialog_window = None
             try:
-                from pywinauto import Desktop
-                desktop = Desktop(backend="uia")
+                if self.app:
+                    all_windows = self.app.windows()
+                    print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
 
-                # 「取引インポートウィザード」ダイアログを探す
-                for window in desktop.windows():
-                    try:
-                        title = window.window_text()
-                        # タイトルに関わらず、すべてのダイアログを候補にする
-                        if title and "管理者" not in title and title.strip():
-                            print(f"  → ダイアログ候補: [{title}]", file=sys.stderr)
-                            # 最初に見つかったダイアログを使用
-                            if not dialog_window:
-                                dialog_window = window
-                    except:
-                        pass
+                    # メインウィンドウ以外のダイアログを探す
+                    for window in all_windows:
+                        try:
+                            if window.handle != self.main_window.handle:
+                                title = window.window_text() or "(タイトルなし)"
+                                class_name = window.class_name()
+                                print(f"  → 子ウィンドウ発見: [{title}] (Class: {class_name})", file=sys.stderr)
+
+                                if not dialog_window:
+                                    dialog_window = window
+                                    print(f"  → このウィンドウを使用します", file=sys.stderr)
+                        except:
+                            pass
+
+                if not dialog_window:
+                    print(f"  ⚠ ダイアログが見つかりません。グローバルにキー送信します。", file=sys.stderr)
             except Exception as e:
                 print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
 
