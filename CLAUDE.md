@@ -96,6 +96,7 @@ ColorMe       Yayoi Sales     │
 - `automation-coloreme.js` - Original prototype (launches new browser instance)
 - `automation-yayoi.py` - Yayoi Sales Windows automation (original prototype)
 - `automation-yayoi-import-customer.py` - Yayoi Sales customer import automation (Step 6, active development)
+- `automation-yayoi-import-sales.py` - Yayoi Sales slip import automation (Step 7, active development)
 
 **Launchers**:
 - `起動.bat` - Windows launcher with git auto-update
@@ -179,6 +180,8 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 - `run-coloreme` - Original ColorMe automation
 - `run-yayoi` - Yayoi automation
 - `run-coloreme-download` - Active ColorMe CSV download
+- `run-yayoi-customer-import` - Yayoi customer import automation (Step 6)
+- `run-yayoi-sales-import` - Yayoi sales slip import automation (Step 7)
 
 ### Security Configuration
 
@@ -343,10 +346,21 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
    });
    ```
 
-2. **Multiple Window Disambiguation**:
-   - Problem: Multiple windows match ".*弥生販売.*" pattern
-   - Solution: Try specific patterns in order (プロフェッショナル → スタンダード → 管理者)
-   - Ensures correct main window selection
+2. **Smart Window Selection Logic (Updated 2026-01-14)**:
+   - **Problem**: Original regex-based matching failed when multiple windows existed, or when only the main window was open
+   - **Solution**: Desktop enumeration with priority-based selection
+     1. Get all windows from Desktop
+     2. Filter for windows containing "弥生販売"
+     3. Select with priority order:
+        - Priority 1: Windows with "管理者" (excluding "伝票")
+        - Priority 2: Windows with "プロフェッショナル" (excluding "伝票")
+        - Priority 3: Windows with "スタンダード" (excluding "伝票")
+        - Priority 4: Any Yayoi window (excluding "伝票")
+   - **Result**: Works in all scenarios:
+     - ✅ Main window only
+     - ✅ Main window + sales slip window
+     - ✅ Multiple Yayoi windows
+   - Detailed logging shows all discovered windows and selected window
 
 3. **Access Key Navigation**:
    - Alt+F → File menu
@@ -377,7 +391,59 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ Connection to Yayoi Sales
 - ✅ Navigation to import menu
 - ✅ UTF-8 encoding fix
+- ✅ Smart window selection (2026-01-14)
 - ⏳ Import dialog interaction (next phase - screenshot-based development)
+
+### Step 7 Yayoi Sales Slip Import - Partial Automation (2026-01-14)
+
+**Achievement**: Automated navigation to Yayoi Sales import menu (伝票インポート)
+
+**File**: `automation-yayoi-import-sales.py` (New Python script for sales slip import)
+
+**Execution Flow** (Current implementation):
+1. Connect to running Yayoi Sales application (~2 seconds)
+   - Uses same smart window selection logic as Step 6
+   - Priority-based selection ensures correct main window
+2. Activate main window (0.5 seconds)
+3. Open File menu: Alt+F (1 second)
+4. Select Import: I key (1.5 seconds)
+5. Select Slip Import: I key (1.5 seconds) - **Different from Step 6 (A key)**
+6. Verify import dialog opened (2 seconds)
+
+**Total execution time**: ~8-9 seconds to reach import dialog
+
+**Key Differences from Step 6**:
+- Step 6: 台帳インポート(A) → Customer ledger import
+- Step 7: 伝票インポート(I) → Sales slip import
+- Same window connection logic, different menu path
+
+**Prerequisites**:
+- Python 3.x installed and in PATH
+- pywinauto: `pip install pywinauto`
+- Yayoi Sales application must be running
+- Version: Works with Yayoi プロフェッショナル版
+
+**Integration**:
+- IPC Handler: `run-yayoi-sales-import` in main.js
+- API: `window.api.runYayoiSalesImport()` in preload.js
+- UI: Step 7 button in business_flow_dashboard.html
+- Badge states: 開発中 → 実行中 → 完了
+
+**Next Steps** (Pending implementation - prioritized over Step 6):
+- Select "売上伝票" (Sales Slip) from import dialog
+- Browse and select CSV file
+- Execute import
+- Handle import completion/error dialog
+- Return success/failure status to Electron app
+
+**Current Status**:
+- ✅ Connection to Yayoi Sales
+- ✅ Navigation to import menu
+- ✅ UTF-8 encoding fix
+- ✅ Smart window selection (2026-01-14)
+- ⏳ Import dialog interaction (next phase - screenshot-based development)
+
+**Development Priority**: Step 7 is prioritized over Step 6 due to higher usage frequency in production workflow.
 
 ### Working with Yayoi Automation (Windows Only)
 
@@ -437,13 +503,20 @@ throw new Error('明確なエラーメッセージ'); // Shows in modal
 - ✅ Comprehensive error handling and logging
 
 **In Development (2026-01-14)**:
-- 🔨 **Yayoi automation (Step 6)** - IN PROGRESS
+- 🔨 **Yayoi automation (Step 7 - Priority)** - IN PROGRESS
   - ✅ Connection to Yayoi Sales application
+  - ✅ Smart window selection logic (handles main window only or with slip windows)
+  - ✅ Navigation to import menu (ファイル → インポート → 伝票インポート)
+  - ✅ UTF-8 encoding fix for Windows
+  - ⏳ Import dialog interaction (screenshot-based development next)
+  - ⏳ CSV file selection and import execution
+- 🔨 **Yayoi automation (Step 6)** - IN PROGRESS (lower priority)
+  - ✅ Connection to Yayoi Sales application
+  - ✅ Smart window selection logic (handles main window only or with slip windows)
   - ✅ Navigation to import menu (ファイル → インポート → 台帳インポート)
   - ✅ UTF-8 encoding fix for Windows
   - ⏳ Import dialog interaction (screenshot-based development next)
   - ⏳ CSV file selection and import execution
-- 📋 Yayoi automation (Step 7) - Sales slip import
 - Configuration system
 - Advanced error recovery
 

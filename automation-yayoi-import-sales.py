@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-弥生販売26 顧客台帳インポート自動化
-Step 6: 弥生販売のインポート画面（顧客台帳）まで自動でナビゲート
+弥生販売26 売上伝票インポート自動化
+Step 7: 弥生販売のインポート画面（売上伝票）まで自動でナビゲート
 """
 from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
@@ -14,7 +14,7 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-class YayoiCustomerImportAutomation:
+class YayoiSalesImportAutomation:
     def __init__(self):
         self.app = None
         self.main_window = None
@@ -133,71 +133,106 @@ class YayoiCustomerImportAutomation:
             print(f"❌ ナビゲーションエラー: {str(e)}", file=sys.stderr)
             return False
 
-    def select_ledger_import(self):
-        """台帳インポート(A)を選択"""
+    def select_transaction_import(self):
+        """取引インポート(B)を選択"""
         try:
-            print("\n台帳インポート(A)を選択しています...", file=sys.stderr)
+            print("\n取引インポート(B)を選択しています...", file=sys.stderr)
 
-            # 「台帳インポート(A)」を選択（アクセスキーがAなのでAキーを押す）
-            self.main_window.type_keys("a")  # A キー
+            # 「取引インポート(B)」を選択（アクセスキーがBなのでBキーを押す）
+            self.main_window.type_keys("b")  # B キー
             time.sleep(1.5)
 
-            print("✓ 台帳インポートを選択しました", file=sys.stderr)
+            print("✓ 取引インポートを選択しました", file=sys.stderr)
             return True
 
         except Exception as e:
-            print(f"❌ 台帳インポート選択エラー: {str(e)}", file=sys.stderr)
+            print(f"❌ 取引インポート選択エラー: {str(e)}", file=sys.stderr)
             return False
 
-    def open_customer_import_dialog(self):
-        """顧客台帳インポートダイアログを開く"""
+    def click_next_button(self, dialog_title=""):
+        """次へ（N）ボタンをクリック"""
         try:
-            print("\n顧客台帳インポートダイアログを確認しています...", file=sys.stderr)
+            print(f"\n次へボタンをクリックしています... ({dialog_title})", file=sys.stderr)
 
-            # インポートダイアログが開くまで待機
-            time.sleep(2.0)
+            # Alt+N で次へボタンを押す
+            self.main_window.type_keys("%n")
+            time.sleep(1.5)
 
-            # インポートダイアログが開いたか確認
-            try:
-                import_dialog = self.app.window(title_re=".*インポート.*", timeout=5)
-                print(f"✓ インポートダイアログを開きました: {import_dialog.window_text()}", file=sys.stderr)
-
-                # ダイアログの情報を出力（次のステップの実装のため）
-                print("\n=== インポートダイアログ情報 ===", file=sys.stderr)
-                print(f"タイトル: {import_dialog.window_text()}", file=sys.stderr)
-                print(f"クラス名: {import_dialog.class_name()}", file=sys.stderr)
-
-                # ダイアログ内のコントロールを列挙
-                try:
-                    print("\n=== ダイアログ内のコントロール ===", file=sys.stderr)
-                    import_dialog.print_control_identifiers(depth=2, filename=None)
-                except Exception as e:
-                    print(f"コントロール列挙エラー: {str(e)}", file=sys.stderr)
-
-                return True
-            except:
-                print("❌ インポートダイアログが見つかりませんでした", file=sys.stderr)
-                print("開いているウィンドウを確認します...", file=sys.stderr)
-
-                # 全てのウィンドウを列挙
-                try:
-                    from pywinauto import Desktop
-                    desktop = Desktop(backend="uia")
-                    windows = desktop.windows()
-                    print(f"\n現在開いているウィンドウ（{len(windows)}個）:", file=sys.stderr)
-                    for i, win in enumerate(windows[:10]):  # 最初の10個だけ表示
-                        try:
-                            print(f"  {i+1}. {win.window_text()}", file=sys.stderr)
-                        except:
-                            pass
-                except Exception as e:
-                    print(f"ウィンドウ列挙エラー: {str(e)}", file=sys.stderr)
-
-                return False
+            print("✓ 次へボタンをクリックしました", file=sys.stderr)
+            return True
 
         except Exception as e:
-            print(f"❌ ダイアログオープンエラー: {str(e)}", file=sys.stderr)
+            print(f"❌ 次へボタンクリックエラー: {str(e)}", file=sys.stderr)
             return False
+
+    def select_slip_import_option(self):
+        """伝票インポート（１）を選択"""
+        try:
+            print("\n伝票インポート（１）を選択しています...", file=sys.stderr)
+
+            # キーボードで「1」を押して選択
+            self.main_window.type_keys("1")
+            time.sleep(1.0)
+
+            print("✓ 伝票インポート（１）を選択しました", file=sys.stderr)
+            return True
+
+        except Exception as e:
+            print(f"❌ 伝票インポート選択エラー: {str(e)}", file=sys.stderr)
+            return False
+
+    def select_sales_slip(self):
+        """売上伝票を選択"""
+        try:
+            print("\n売上伝票を選択しています...", file=sys.stderr)
+
+            # ＜インポートする伝票（D）＞のコンボボックスにフォーカスを移動
+            # Alt+D でコンボボックスにアクセス
+            self.main_window.type_keys("%d")
+            time.sleep(0.5)
+
+            # 「売上伝票」を探す（リストの最初にあると仮定）
+            # 下矢印キーで選択を移動して「売上伝票」を探す
+            # まず、Homeキーでリストの最初に移動
+            self.main_window.type_keys("{HOME}")
+            time.sleep(0.3)
+
+            # 売上伝票を選択（リストの最初の項目と仮定）
+            self.main_window.type_keys("{ENTER}")
+            time.sleep(1.0)
+
+            print("✓ 売上伝票を選択しました", file=sys.stderr)
+            return True
+
+        except Exception as e:
+            print(f"❌ 売上伝票選択エラー: {str(e)}", file=sys.stderr)
+            return False
+
+    def debug_print_current_dialog(self):
+        """デバッグ用：現在のダイアログ情報を出力"""
+        try:
+            print("\n=== 現在開いているウィンドウを調査 ===", file=sys.stderr)
+            from pywinauto import Desktop
+            desktop = Desktop(backend="uia")
+            windows = desktop.windows()
+
+            print(f"全ウィンドウ数: {len(windows)}", file=sys.stderr)
+            for i, win in enumerate(windows[:15]):  # 最初の15個
+                try:
+                    title = win.window_text()
+                    if title and ("インポート" in title or "ウィザード" in title or "弥生" in title):
+                        print(f"  {i+1}. {title}", file=sys.stderr)
+                        # ダイアログのコントロールを表示
+                        try:
+                            print(f"     コントロール一覧:", file=sys.stderr)
+                            win.print_control_identifiers(depth=2, filename=None)
+                        except:
+                            pass
+                except:
+                    pass
+
+        except Exception as e:
+            print(f"デバッグ情報出力エラー: {str(e)}", file=sys.stderr)
 
     def print_window_info(self):
         """デバッグ用：ウィンドウ情報を出力"""
@@ -239,25 +274,55 @@ class YayoiCustomerImportAutomation:
             # デバッグ用：ウィンドウ情報を出力
             self.print_window_info()
 
-            # 工程2: インポートメニューまでナビゲート
+            # 工程2: インポートメニューまでナビゲート（ファイル → インポート）
             if not self.navigate_to_import_menu():
                 return {
                     'success': False,
                     'message': 'インポートメニューへのナビゲーションに失敗しました。'
                 }
 
-            # 工程3: 台帳インポート(A)を選択
-            if not self.select_ledger_import():
+            # 工程3: 取引インポート(B)を選択
+            if not self.select_transaction_import():
                 return {
                     'success': False,
-                    'message': '台帳インポートの選択に失敗しました。'
+                    'message': '取引インポートの選択に失敗しました。'
                 }
 
-            # 工程4: 顧客台帳インポートダイアログを開く
-            if not self.open_customer_import_dialog():
+            # デバッグ用：現在のダイアログ情報を出力
+            self.debug_print_current_dialog()
+
+            # 工程4: 次へ（N）ボタンをクリック（1回目）
+            if not self.click_next_button("取引インポート選択後"):
                 return {
                     'success': False,
-                    'message': '顧客台帳インポートダイアログを開けませんでした。\n\n現在は開発中のため、弥生販売のメニュー構造を調査しています。'
+                    'message': '次へボタン（1回目）のクリックに失敗しました。'
+                }
+
+            # デバッグ用：現在のダイアログ情報を出力
+            self.debug_print_current_dialog()
+
+            # 工程5: 伝票インポート（１）を選択
+            if not self.select_slip_import_option():
+                return {
+                    'success': False,
+                    'message': '伝票インポート（１）の選択に失敗しました。'
+                }
+
+            # 工程6: 次へ（N）ボタンをクリック（2回目）
+            if not self.click_next_button("伝票インポート選択後"):
+                return {
+                    'success': False,
+                    'message': '次へボタン（2回目）のクリックに失敗しました。'
+                }
+
+            # デバッグ用：現在のダイアログ情報を出力
+            self.debug_print_current_dialog()
+
+            # 工程7: 売上伝票を選択
+            if not self.select_sales_slip():
+                return {
+                    'success': False,
+                    'message': '売上伝票の選択に失敗しました。'
                 }
 
             end_time = time.time()
@@ -265,7 +330,7 @@ class YayoiCustomerImportAutomation:
 
             return {
                 'success': True,
-                'message': f'顧客台帳インポート画面を開きました（{duration:.2f}秒）',
+                'message': f'売上伝票インポート設定完了（{duration:.2f}秒）\n\n次のステップ: CSVファイルを選択してインポートを実行してください。',
                 'duration': duration
             }
 
@@ -276,7 +341,7 @@ class YayoiCustomerImportAutomation:
             }
 
 if __name__ == '__main__':
-    automation = YayoiCustomerImportAutomation()
+    automation = YayoiSalesImportAutomation()
     result = automation.run()
 
     # 結果をJSON形式で出力
