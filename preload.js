@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-console.log('✅ preload.js が読み込まれました - Step 7対応版');
+console.log('✅ preload.js が読み込まれました - Step 7対応版 v2');
 
 const apiObject = {
   testAction: () => ipcRenderer.invoke('test-action'),
@@ -12,13 +12,8 @@ const apiObject = {
 };
 
 console.log('📋 定義するAPIオブジェクト:', Object.keys(apiObject));
+console.log('📋 API数:', Object.keys(apiObject).length);
 
 contextBridge.exposeInMainWorld('api', apiObject);
 
-console.log('✅ window.api に公開しました');
-
-// 定義後、実際に確認
-setTimeout(() => {
-  console.log('🔍 window.apiの内容を確認:', Object.keys(window.api || {}));
-  console.log('🔍 runYayoiSalesImport存在?', typeof window.api?.runYayoiSalesImport);
-}, 100);
+console.log('✅ contextBridge.exposeInMainWorld 実行完了');
