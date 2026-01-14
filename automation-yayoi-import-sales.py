@@ -259,19 +259,67 @@ class YayoiSalesImportAutomation:
         try:
             print("\n売上伝票を選択しています...", file=sys.stderr)
 
-            # ＜インポートする伝票（D）＞のコンボボックスにフォーカスを移動
-            # Alt+D でコンボボックスにアクセス
-            self.main_window.type_keys("%d")
-            time.sleep(0.5)
+            # ダイアログを探す
+            dialog_window = None
+            try:
+                from pywinauto import Desktop
+                desktop = Desktop(backend="uia")
 
-            # 「売上伝票」を探す（リストの最初にあると仮定）
-            # 下矢印キーで選択を移動して「売上伝票」を探す
-            # まず、Homeキーでリストの最初に移動
-            self.main_window.type_keys("{HOME}")
-            time.sleep(0.3)
+                # 「取引インポートウィザード」ダイアログを探す
+                for window in desktop.windows():
+                    try:
+                        title = window.window_text()
+                        # タイトルに関わらず、すべてのダイアログを候補にする
+                        if title and "管理者" not in title and title.strip():
+                            print(f"  → ダイアログ候補: [{title}]", file=sys.stderr)
+                            # 最初に見つかったダイアログを使用
+                            if not dialog_window:
+                                dialog_window = window
+                    except:
+                        pass
+            except Exception as e:
+                print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
 
-            # 売上伝票を選択（リストの最初の項目と仮定）
-            self.main_window.type_keys("{ENTER}")
+            # ダイアログまたはグローバルに操作を送信
+            if dialog_window:
+                dialog_window.set_focus()
+                time.sleep(0.5)
+
+                # Alt+D でコンボボックスにアクセス
+                print("  → Alt+D でコンボボックスを開きます", file=sys.stderr)
+                dialog_window.type_keys("%d")
+                time.sleep(0.5)
+
+                # HOMEキーで最初の項目（見積書）に移動
+                dialog_window.type_keys("{HOME}")
+                time.sleep(0.3)
+
+                # 下矢印キーを2回押して売上伝票に移動
+                # 順番: 見積書(0) → 受注伝票(1) → 売上伝票(2)
+                print("  → 下矢印キーで売上伝票を選択します", file=sys.stderr)
+                dialog_window.type_keys("{DOWN}")
+                time.sleep(0.2)
+                dialog_window.type_keys("{DOWN}")
+                time.sleep(0.2)
+
+                # ENTERで確定
+                dialog_window.type_keys("{ENTER}")
+                print(f"  → 売上伝票を選択しました（ダイアログ操作）", file=sys.stderr)
+            else:
+                # グローバルに送信
+                import pywinauto.keyboard as keyboard
+                print("  → グローバルに操作を送信します", file=sys.stderr)
+                keyboard.send_keys("%d")
+                time.sleep(0.5)
+                keyboard.send_keys("{HOME}")
+                time.sleep(0.3)
+                keyboard.send_keys("{DOWN}")
+                time.sleep(0.2)
+                keyboard.send_keys("{DOWN}")
+                time.sleep(0.2)
+                keyboard.send_keys("{ENTER}")
+                print(f"  → 売上伝票を選択しました（グローバル操作）", file=sys.stderr)
+
             time.sleep(1.0)
 
             print("✓ 売上伝票を選択しました", file=sys.stderr)
@@ -279,6 +327,8 @@ class YayoiSalesImportAutomation:
 
         except Exception as e:
             print(f"❌ 売上伝票選択エラー: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return False
 
     def debug_print_current_dialog(self):
