@@ -211,8 +211,38 @@ class YayoiSalesImportAutomation:
         try:
             print("\n伝票インポート（１）を選択しています...", file=sys.stderr)
 
-            # キーボードで「1」を押して選択
-            self.main_window.type_keys("1")
+            # ダイアログを探す
+            dialog_window = None
+            try:
+                from pywinauto import Desktop
+                desktop = Desktop(backend="uia")
+
+                # ウィザードダイアログを探す（より広範囲に）
+                for window in desktop.windows():
+                    try:
+                        title = window.window_text()
+                        # 弥生販売メインウィンドウ以外で、タイトルがある小さいウィンドウを探す
+                        if title and title.strip() and "管理者" not in title:
+                            print(f"  → 候補ダイアログ: [{title}]", file=sys.stderr)
+                            dialog_window = window
+                            break
+                    except:
+                        pass
+            except Exception as e:
+                print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
+
+            # ダイアログまたはメインウィンドウに「1」キーを送信
+            if dialog_window:
+                dialog_window.set_focus()
+                time.sleep(0.5)
+                dialog_window.type_keys("1")
+                print(f"  → ダイアログに「1」を送信しました", file=sys.stderr)
+            else:
+                # グローバルに送信
+                import pywinauto.keyboard as keyboard
+                keyboard.send_keys("1")
+                print(f"  → グローバルに「1」を送信しました", file=sys.stderr)
+
             time.sleep(1.0)
 
             print("✓ 伝票インポート（１）を選択しました", file=sys.stderr)
@@ -220,6 +250,8 @@ class YayoiSalesImportAutomation:
 
         except Exception as e:
             print(f"❌ 伝票インポート選択エラー: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return False
 
     def select_sales_slip(self):
@@ -258,17 +290,23 @@ class YayoiSalesImportAutomation:
             windows = desktop.windows()
 
             print(f"全ウィンドウ数: {len(windows)}", file=sys.stderr)
-            for i, win in enumerate(windows[:15]):  # 最初の15個
+
+            # 全てのウィンドウのタイトルを表示（空白以外）
+            for i, win in enumerate(windows[:20]):  # 最初の20個
                 try:
                     title = win.window_text()
-                    if title and ("インポート" in title or "ウィザード" in title or "弥生" in title):
-                        print(f"  {i+1}. {title}", file=sys.stderr)
-                        # ダイアログのコントロールを表示
-                        try:
-                            print(f"     コントロール一覧:", file=sys.stderr)
-                            win.print_control_identifiers(depth=2, filename=None)
-                        except:
-                            pass
+                    if title and title.strip():  # 空白でないタイトル
+                        print(f"  {i+1}. [{title}]", file=sys.stderr)
+
+                        # 弥生販売関連、インポート、ウィザード以外のウィンドウも表示
+                        if ("インポート" in title or "ウィザード" in title or
+                            "弥生" in title or "取引" in title or "伝票" in title):
+                            # ダイアログのコントロールを表示
+                            try:
+                                print(f"     → 詳細調査対象", file=sys.stderr)
+                                win.print_control_identifiers(depth=2, filename=None)
+                            except:
+                                pass
                 except:
                     pass
 
@@ -338,6 +376,10 @@ class YayoiSalesImportAutomation:
                     'success': False,
                     'message': '次へボタン（1回目）のクリックに失敗しました。'
                 }
+
+            # 次の画面が開くまで待機
+            print("次の画面が開くまで待機中...", file=sys.stderr)
+            time.sleep(2.0)
 
             # デバッグ用：現在のダイアログ情報を出力
             self.debug_print_current_dialog()
