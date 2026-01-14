@@ -140,9 +140,14 @@ class YayoiSalesImportAutomation:
 
             # 「取引インポート(B)」を選択（アクセスキーがBなのでBキーを押す）
             self.main_window.type_keys("b")  # B キー
-            time.sleep(1.5)
+            time.sleep(2.0)  # ダイアログが開くまで待機（1.5秒→2.0秒に延長）
 
             print("✓ 取引インポートを選択しました", file=sys.stderr)
+
+            # ダイアログが開くまで追加で待機
+            print("  ダイアログが開くまで待機中...", file=sys.stderr)
+            time.sleep(1.5)
+
             return True
 
         except Exception as e:
@@ -154,15 +159,39 @@ class YayoiSalesImportAutomation:
         try:
             print(f"\n次へボタンをクリックしています... ({dialog_title})", file=sys.stderr)
 
+            # ダイアログが開いているか確認
+            try:
+                from pywinauto import Desktop
+                desktop = Desktop(backend="uia")
+
+                # インポートウィザードを探す
+                wizard_found = False
+                for window in desktop.windows():
+                    try:
+                        title = window.window_text()
+                        if "インポート" in title or "ウィザード" in title:
+                            print(f"  → ダイアログ発見: {title}", file=sys.stderr)
+                            wizard_found = True
+                            break
+                    except:
+                        pass
+
+                if not wizard_found:
+                    print(f"  ⚠ ウィザードダイアログが見つかりません", file=sys.stderr)
+            except Exception as e:
+                print(f"  ⚠ ダイアログ確認エラー: {str(e)}", file=sys.stderr)
+
             # Alt+N で次へボタンを押す
             self.main_window.type_keys("%n")
-            time.sleep(1.5)
+            time.sleep(2.0)  # 1.5秒→2.0秒に延長
 
             print("✓ 次へボタンをクリックしました", file=sys.stderr)
             return True
 
         except Exception as e:
             print(f"❌ 次へボタンクリックエラー: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return False
 
     def select_slip_import_option(self):
