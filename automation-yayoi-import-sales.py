@@ -159,31 +159,43 @@ class YayoiSalesImportAutomation:
         try:
             print(f"\n次へボタンをクリックしています... ({dialog_title})", file=sys.stderr)
 
-            # ダイアログが開いているか確認
+            # ダイアログを探してフォーカスを移す
+            dialog_window = None
             try:
                 from pywinauto import Desktop
                 desktop = Desktop(backend="uia")
 
                 # インポートウィザードを探す
-                wizard_found = False
                 for window in desktop.windows():
                     try:
                         title = window.window_text()
                         if "インポート" in title or "ウィザード" in title:
                             print(f"  → ダイアログ発見: {title}", file=sys.stderr)
-                            wizard_found = True
+                            dialog_window = window
                             break
                     except:
                         pass
 
-                if not wizard_found:
-                    print(f"  ⚠ ウィザードダイアログが見つかりません", file=sys.stderr)
+                if not dialog_window:
+                    print(f"  ⚠ ダイアログが見つかりません。メインウィンドウに送信します。", file=sys.stderr)
             except Exception as e:
-                print(f"  ⚠ ダイアログ確認エラー: {str(e)}", file=sys.stderr)
+                print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
 
-            # Alt+N で次へボタンを押す
-            self.main_window.type_keys("%n")
-            time.sleep(2.0)  # 1.5秒→2.0秒に延長
+            # ダイアログが見つかった場合はダイアログに、見つからない場合は単にキー送信
+            if dialog_window:
+                # ダイアログにフォーカスを移す
+                dialog_window.set_focus()
+                time.sleep(0.5)
+                # Alt+N で次へボタンを押す
+                dialog_window.type_keys("%n")
+                print(f"  → ダイアログにAlt+Nを送信しました", file=sys.stderr)
+            else:
+                # ダイアログが見つからない場合、キーボードイベントを直接送信
+                import pywinauto.keyboard as keyboard
+                keyboard.send_keys("%n")
+                print(f"  → グローバルにAlt+Nを送信しました", file=sys.stderr)
+
+            time.sleep(2.0)
 
             print("✓ 次へボタンをクリックしました", file=sys.stderr)
             return True
