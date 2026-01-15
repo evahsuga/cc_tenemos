@@ -835,8 +835,23 @@
                 const result = await window.api.runYayoiCustomerImport();
 
                 if (result.success) {
-                    // 成功時
-                    showModal('成功！', result.message, 'success');
+                    // 成功時 - 手動操作の説明モーダルを表示
+                    const instructionHtml = `
+                        <div style="text-align: left; line-height: 1.8;">
+                            <p><strong>① ファイル選択</strong></p>
+                            <p style="margin-left: 1em;">ダウンロードフォルダの<br>
+                            <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">yayoi_new_customers.txt</code><br>
+                            を選択して、「次へ」をクリックします。</p>
+
+                            <p style="margin-top: 1em;"><strong>② データタイプ変更</strong></p>
+                            <p style="margin-left: 1em;"><strong>テキスト形式(T)【タブ区切】</strong>へ変更し、<br>
+                            「次へ」をクリックします。</p>
+
+                            <p style="margin-top: 1em;"><strong>③ 確定</strong></p>
+                            <p style="margin-left: 1em;">その後も「次へ」を押して確定へ。</p>
+                        </div>
+                    `;
+                    showModal('顧客台帳インポート - 手動操作', instructionHtml, 'info');
                     badge.className = 'badge badge-completed';
                     badge.textContent = '完了';
 
@@ -930,6 +945,11 @@
                 // エラー
                 modalSpinner.style.display = 'none';
                 modalIcon.innerHTML = '<div class="error-icon">❌</div>';
+                modalCloseBtn.style.display = 'block';
+            } else if (type === 'info') {
+                // 情報・手順説明
+                modalSpinner.style.display = 'none';
+                modalIcon.innerHTML = '<div class="info-icon">📋</div>';
                 modalCloseBtn.style.display = 'block';
             }
 
