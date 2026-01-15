@@ -892,8 +892,24 @@
                 const result = await window.api.runYayoiSalesImport();
 
                 if (result.success) {
-                    // 成功時
-                    showModal('成功！', result.message, 'success');
+                    // 成功時 - 手動操作の説明モーダルを表示
+                    const instructionHtml = `
+                        <div style="text-align: left; line-height: 1.8;">
+                            <p><strong>① ファイル選択</strong></p>
+                            <p style="margin-left: 1em;">ダウンロードフォルダの<br>
+                            <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">ya_sales_20260000.txt</code><br>
+                            <span style="font-size: 0.9em; color: #666;">（0000に日付4桁）</span><br>
+                            を選択して、「次へ」をクリックします。</p>
+
+                            <p style="margin-top: 1em;"><strong>② データタイプ変更</strong></p>
+                            <p style="margin-left: 1em;"><strong>テキスト形式(T)【タブ区切】</strong>へ変更し、<br>
+                            「次へ」をクリックします。</p>
+
+                            <p style="margin-top: 1em;"><strong>③ 確定</strong></p>
+                            <p style="margin-left: 1em;">その後も「次へ」を押して確定へ。</p>
+                        </div>
+                    `;
+                    showModal('売上伝票インポート - 手動操作', instructionHtml, 'info');
                     badge.className = 'badge badge-completed';
                     badge.textContent = '完了';
 
