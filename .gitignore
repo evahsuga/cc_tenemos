@@ -22,6 +22,7 @@ Desktop.ini
 # スクリーンショット（テスト用）
 *.png
 !build/icon.png
+!assets/*.png
 
 # テスト・一時ファイル
 *.zip
