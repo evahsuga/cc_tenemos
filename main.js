@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const os = require('os');
@@ -232,6 +232,18 @@ const ColorMeAutomation = require('./automation-coloreme');
 ipcMain.handle('test-action', async () => {
   console.log('テストアクション実行！');
   return { success: true, message: 'テスト成功！' };
+});
+
+// 外部URLをシステムのデフォルトブラウザで開くIPCハンドラー
+ipcMain.handle('open-external-url', async (event, url) => {
+  console.log('外部ブラウザでURLを開きます:', url);
+  try {
+    await shell.openExternal(url);
+    return { success: true, message: 'ブラウザで開きました' };
+  } catch (error) {
+    console.error('外部URL起動エラー:', error);
+    return { success: false, message: error.message };
+  }
 });
 
 // カラーミーショップ自動化のIPCハンドラー

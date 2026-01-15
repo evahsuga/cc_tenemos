@@ -479,17 +479,17 @@
                 
                 <!-- ステップ3 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-3" target="color_yayo_app" rel="noopener noreferrer">
+                    <div class="step-card clickable" id="step-card-3" onclick="openColorYayoApp()">
                         <div class="step-number">3</div>
                         <div class="step-title">顧客登録照合</div>
                         <div class="step-status">
                             <span class="badge badge-semi-auto">準AUTO</span>
                             <div class="note-icon">
                                 📝
-                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2（通常ブラウザで開く）</div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <input type="checkbox" class="checkbox-external" id="task-3" onchange="toggleCompleteExternal(this, 'step-card-3')">
                 </div>
             </div>
@@ -585,14 +585,14 @@
                 
                 <!-- ステップ8 -->
                 <div class="step-wrapper">
-                    <div class="step-card disabled" id="step-card-8">
+                    <div class="step-card" id="step-card-8">
                         <div class="step-number">8</div>
                         <div class="step-title">弥生販売 売上伝票印刷</div>
                         <div class="step-status">
-                            <span class="badge badge-manual-dev">手動（開発中）</span>
+                            <span class="badge badge-manual">手動</span>
                             <div class="note-icon">
                                 📝
-                                <div class="tooltip">売上伝票印刷アプリ 開発中</div>
+                                <div class="tooltip">弥生販売にて手動で売上伝票を印刷</div>
                             </div>
                         </div>
                     </div>
@@ -765,6 +765,18 @@
                 content.classList.add('open');
                 icon.classList.add('open');
                 icon.textContent = '▲';
+            }
+        }
+
+        // Step 3: カラーミー→弥生販売 変換アプリを通常ブラウザで開く
+        async function openColorYayoApp() {
+            const url = 'https://tenemosnet.github.io/color_yayo/';
+            try {
+                await window.api.openExternalUrl(url);
+                console.log('通常ブラウザで変換アプリを開きました');
+            } catch (error) {
+                console.error('ブラウザ起動エラー:', error);
+                showModal('エラー', '通常ブラウザの起動に失敗しました。', 'error');
             }
         }
 

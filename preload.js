@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('api', {
   runYayoi: (customerCode) => ipcRenderer.invoke('run-yayoi', customerCode),
   runColorMeDownload: () => ipcRenderer.invoke('run-coloreme-download'),
   runYayoiCustomerImport: () => ipcRenderer.invoke('run-yayoi-customer-import'),
-  runYayoiSalesImport: () => ipcRenderer.invoke('run-yayoi-sales-import')
+  runYayoiSalesImport: () => ipcRenderer.invoke('run-yayoi-sales-import'),
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url)
 });
