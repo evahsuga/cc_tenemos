@@ -370,7 +370,7 @@
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             text-align: center;
         }
@@ -532,17 +532,17 @@
 
                 <!-- ステップ5-2 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5-2" target="color_yayo_app" rel="noopener noreferrer">
+                    <div class="step-card clickable" id="step-card-5-2" onclick="showStep5_2Modal()">
                         <div class="step-number">5-2</div>
                         <div class="step-title">伝票出力の必要な人の「弥生販売売上伝票用」txtダウンロード</div>
                         <div class="step-status">
-                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <span class="badge badge-manual">手動</span>
                             <div class="note-icon">
                                 📝
-                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                                <div class="tooltip">STEP3の変換ツールで操作</div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <input type="checkbox" class="checkbox-external" id="task-5-2" onchange="toggleCompleteExternal(this, 'step-card-5-2')">
                 </div>
             </div>
@@ -778,6 +778,25 @@
                 console.error('ブラウザ起動エラー:', error);
                 showModal('エラー', '通常ブラウザの起動に失敗しました。', 'error');
             }
+        }
+
+        // Step 5-2: 弥生販売売上伝票用txtダウンロード手順モーダル
+        function showStep5_2Modal() {
+            const instructionHtml = `
+                <div style="text-align: left; line-height: 1.8;">
+                    <p><strong>STEP３で開いた画面で操作します。</strong></p>
+                    <p>下記の図で示した１〜３を順番に行います。</p>
+
+                    <div style="margin: 1em 0; text-align: center;">
+                        <img src="assets/jidoustep5-2.png" alt="操作手順" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+
+                    <p><strong>１</strong> 売上伝票を作成するものにチェック</p>
+                    <p><strong>２</strong> 弥生販売の新規売上伝票を開き、伝票番号を入力</p>
+                    <p><strong>３</strong> クリックしてTXTデータをダウンロード</p>
+                </div>
+            `;
+            showModal('Step 5-2: 売上伝票用TXTダウンロード', instructionHtml, 'info');
         }
 
         // カラーミー自動化を実行
