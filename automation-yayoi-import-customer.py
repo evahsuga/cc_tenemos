@@ -149,6 +149,35 @@ class YayoiCustomerImportAutomation:
             print(f"❌ 台帳インポート選択エラー: {str(e)}", file=sys.stderr)
             return False
 
+    def find_dialog_window(self):
+        """弥生販売プロセスの子ダイアログを探す（Step 7と同じパターン）"""
+        dialog_window = None
+        try:
+            if self.app:
+                # 弥生販売アプリケーションの全ウィンドウを取得
+                all_windows = self.app.windows()
+                print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
+
+                # メインウィンドウ以外のダイアログを探す
+                for window in all_windows:
+                    try:
+                        # メインウィンドウではないものを探す
+                        if window.handle != self.main_window.handle:
+                            title = window.window_text() or "(タイトルなし)"
+                            class_name = window.class_name()
+                            print(f"  → 子ウィンドウ発見: [{title}] (Class: {class_name})", file=sys.stderr)
+
+                            # 最初に見つかったダイアログを使用
+                            if not dialog_window:
+                                dialog_window = window
+                                print(f"  → このウィンドウを使用します", file=sys.stderr)
+                    except:
+                        pass
+        except Exception as e:
+            print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
+
+        return dialog_window
+
     def open_customer_import_dialog(self):
         """顧客台帳インポートダイアログを開く"""
         try:
@@ -157,35 +186,34 @@ class YayoiCustomerImportAutomation:
             # インポートダイアログが開くまで待機
             time.sleep(2.0)
 
-            # インポートダイアログが開いたか確認
-            try:
-                import_dialog = self.app.window(title_re=".*インポート.*", timeout=5)
-                print(f"✓ インポートダイアログを開きました: {import_dialog.window_text()}", file=sys.stderr)
+            # 弥生販売プロセスの子ウィンドウからダイアログを探す
+            dialog_window = self.find_dialog_window()
 
-                # ダイアログの情報を出力（次のステップの実装のため）
+            if dialog_window:
+                title = dialog_window.window_text() or "(タイトルなし)"
+                print(f"✓ インポートダイアログを開きました: {title}", file=sys.stderr)
+
+                # ダイアログの情報を出力
                 print("\n=== インポートダイアログ情報 ===", file=sys.stderr)
-                print(f"タイトル: {import_dialog.window_text()}", file=sys.stderr)
-                print(f"クラス名: {import_dialog.class_name()}", file=sys.stderr)
+                print(f"タイトル: {title}", file=sys.stderr)
+                print(f"クラス名: {dialog_window.class_name()}", file=sys.stderr)
 
-                # ダイアログ内のコントロールを列挙
-                try:
-                    print("\n=== ダイアログ内のコントロール ===", file=sys.stderr)
-                    import_dialog.print_control_identifiers(depth=2, filename=None)
-                except Exception as e:
-                    print(f"コントロール列挙エラー: {str(e)}", file=sys.stderr)
+                # ダイアログにフォーカスを移す
+                dialog_window.set_focus()
+                time.sleep(0.5)
 
                 return True
-            except:
+            else:
                 print("❌ インポートダイアログが見つかりませんでした", file=sys.stderr)
                 print("開いているウィンドウを確認します...", file=sys.stderr)
 
-                # 全てのウィンドウを列挙
+                # デバッグ用：全てのウィンドウを列挙
                 try:
                     from pywinauto import Desktop
                     desktop = Desktop(backend="uia")
                     windows = desktop.windows()
                     print(f"\n現在開いているウィンドウ（{len(windows)}個）:", file=sys.stderr)
-                    for i, win in enumerate(windows[:10]):  # 最初の10個だけ表示
+                    for i, win in enumerate(windows[:10]):
                         try:
                             print(f"  {i+1}. {win.window_text()}", file=sys.stderr)
                         except:
