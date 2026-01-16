@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **業務自動化ランチャー (Business Automation Launcher)** - An Electron desktop application that automates workflows between ColorMe Shop (カラーミーショップ) e-commerce platform and Yayoi Sales (弥生販売) accounting software.
 
+**Current Version**: v2.0 (2026-01-16) - 現場リリース版
+
 **Key Goal**: Replace slow RPA solutions with a fast, custom desktop app that reduces task execution from 30 seconds to under 1 second, saving ~¥300,000 annually in RPA licensing costs.
 
 **Target**: 30x speed improvement over manual operations with 95%+ success rate.
@@ -182,6 +184,9 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 - `run-coloreme-download` - Active ColorMe CSV download
 - `run-yayoi-customer-import` - Yayoi customer import automation (Step 6)
 - `run-yayoi-sales-import` - Yayoi sales slip import automation (Step 7)
+- `open-external-url` - Opens URL in system default browser (used for Step 3)
+
+**Note on API exposure**: The preload.js exposes APIs as `window.api` (not `window.electronAPI`). Renderer code uses `window.api.runColorMeDownload()`, etc.
 
 ### Security Configuration
 
@@ -192,34 +197,33 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 
 ## Business Workflow
 
-The dashboard implements a 15-step order-to-shipping workflow divided into 4 phases:
+The dashboard implements a 15-step order-to-shipping workflow divided into 4 phases (v2.0 structure):
 
-**Phase 1: Order Processing** (Steps 1-3)
-- Step 2 is **fully automated** (ColorMe sales slip CSV download)
-  - One-click execution: Chrome startup → Login → CSV download
-  - Downloads to: `C:\Users\user\Downloads\sales_all.csv`
-  - Automatic Chrome debug mode management
-  - Automatic login with saved credentials
-  - Fully unattended operation
+**Phase 1: 受注処理フェーズ** (Steps 0-3)
+- Step 0: ゆうちょ銀行入金確認（手動）
+- Step 1: カラーミー受注伝票出力（手動）
+- Step 2: **Fully automated** - ColorMe CSV download
+- Step 3: 顧客登録照合（準AUTO - opens external web app）
 
-**Phase 2: Payment & Documents** (Steps 4-5)
-- Semi-automated via external web app
+**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 5-1, 6)
+- Step 5-1: 弥生販売顧客登録用txtダウンロード（準AUTO）
+- Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
-**Phase 3: Yayoi Import** (Steps 6-8)
-- Currently in development
-- Will automate customer ledger and sales slip import
+**Phase 3: 売上伝票作成フェーズ** (Steps 4, 5-2, 7, 8)
+- Step 4: 入金記録をもとに受注プレビュー□欄へチェック（手動）
+- Step 5-2: 弥生販売売上伝票用txtダウンロード（手動）
+- Step 7: 弥生販売インポート売上伝票入力（部分自動化）
+- Step 8: 弥生販売売上伝票印刷（手動）
 
-**Phase 4: Shipping** (Steps 9-15)
+**Phase 4: 出荷処理フェーズ** (Steps 9-15)
 - Planned for future implementation (PowerAutomate)
 
 ### Current Implementation Status
-- ✅ **Step 2: Fully automated and production-ready** (2026-01-14)
-  - Complete automation: Chrome launch → Login → CSV download
-  - Fixed IPv6/IPv4 connection issue (localhost → 127.0.0.1)
-  - Automatic Chrome process cleanup before startup
-  - Robust debug port connection with retry mechanism
-  - Output file: `C:\Users\user\Downloads\sales_all.csv`
-- 🔨 Steps 6-7: Next development target (Yayoi import automation)
+- ✅ **Step 2: Fully automated** - ColorMe CSV download (production-ready)
+- ✅ **Step 3: Opens external app** - Opens conversion web app in default browser
+- ✅ **Step 5-2: Manual with image guide** - Shows instruction modal with screenshot
+- ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
+- ✅ **Step 7: Partial automation** - Navigates to CSV selection screen, shows manual instruction modal
 - 📋 Steps 9-15: Planned (PowerAutomate)
 
 ## Development Guidelines
@@ -539,58 +543,56 @@ const { username, password } = config.colorMeCredentials;
 
 ### Error Handling Pattern
 
-Modal feedback system with three states:
-1. **Loading**: Show spinner modal
-2. **Success**: Show checkmark, auto-dismiss after 2 seconds
+Modal feedback system with four states:
+1. **Loading**: Show spinner modal during automation
+2. **Success**: Show checkmark with success message
 3. **Error**: Show error message, require user dismissal
+4. **Info**: Show manual instruction modal (for partial automation steps)
 
 Implement in automation modules:
 ```javascript
 throw new Error('明確なエラーメッセージ'); // Shows in modal
 ```
 
+### Manual Instruction Modal Pattern
+
+For partially automated steps (where automation navigates to a screen, then user completes manually):
+
+```javascript
+// In dashboard JavaScript
+if (result.success) {
+    const instructionHtml = `
+        <div style="text-align: left; line-height: 1.8;">
+            <p><strong>① Step description</strong></p>
+            <p style="margin-left: 1em;">Details...</p>
+        </div>
+    `;
+    showModal('Title - 手動操作', instructionHtml, 'info');
+}
+```
+
+**With images** (Step 5-2 pattern):
+- Place images in `assets/` folder (e.g., `assets/jidoustep5-2.png`)
+- Reference in modal HTML: `<img src="assets/jidoustep5-2.png" ...>`
+
 ## Project Status
 
 **Phase**: Phase 2 (Main Implementation) - In Progress
 
-**Completed (2026-01-14)**:
-- ✅ Electron app structure
-- ✅ Chrome debug mode integration with automatic process management
-- ✅ **ColorMe CSV download full automation (Step 2)** - PRODUCTION READY
-  - One-click operation from Chrome launch to CSV download
-  - Automatic login with saved credentials
-  - Fixed IPv6/IPv4 connection issue (localhost → 127.0.0.1)
-  - Robust retry mechanism (40-second max wait)
-  - Output: `C:\Users\user\Downloads\sales_all.csv`
-- ✅ Dashboard UI with workflow visualization
+**Completed Features**:
+- ✅ Electron app structure with Chrome debug mode integration
+- ✅ **Step 2**: ColorMe CSV download - fully automated (production-ready)
+- ✅ **Step 3**: Opens conversion web app in default browser
+- ✅ **Step 5-2**: Manual instruction modal with screenshot image
+- ✅ **Step 6**: Partial automation to import dialog + manual instruction modal
+- ✅ **Step 7**: Partial automation to CSV selection screen + manual instruction modal
+- ✅ Dashboard UI with workflow visualization and modal system
 - ✅ Git-based auto-update launchers
-- ✅ Comprehensive error handling and logging
 
-**In Development (2026-01-14)**:
-- 🔨 **Yayoi automation (Step 7 - Priority)** - NEARLY COMPLETE
-  - ✅ Connection to Yayoi Sales application
-  - ✅ Smart window selection logic (handles main window only or with slip windows)
-  - ✅ Navigation to import menu (ファイル → インポート → 取引インポート)
-  - ✅ UTF-8 encoding fix for Windows
-  - ✅ **Dialog detection via process enumeration (CRITICAL FIX)**
-  - ✅ **Wizard navigation (Next button clicks on correct dialog)**
-  - ✅ **Sales slip selection from combobox (Alt+D → HOME → DOWN×2 → ENTER)**
-  - ✅ **CSV file selection screen reached** (2026-01-14)
-  - ⏳ CSV file browse and import execution (final step)
-- 🔨 **Yayoi automation (Step 6)** - PARTIAL (lower priority)
-  - ✅ Connection to Yayoi Sales application
-  - ✅ Smart window selection logic (handles main window only or with slip windows)
-  - ✅ Navigation to import menu (ファイル → インポート → 台帳インポート)
-  - ✅ UTF-8 encoding fix for Windows
-  - ⏳ Import dialog interaction (apply Step 7 learnings)
-  - ⏳ CSV file selection and import execution
-- Configuration system
-- Advanced error recovery
-
-**Planned**:
+**Remaining Work**:
 - Steps 9-15 automation (PowerAutomate integration)
+- Optional: Extend Step 6-7 automation to complete file selection (currently uses manual instruction modals)
 - File management system (auto-cleanup, archiving)
-- Execution history logging
 
 ## Important Notes
 

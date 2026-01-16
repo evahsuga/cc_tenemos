@@ -444,7 +444,23 @@
             <!-- フェーズ1: 受注処理 -->
             <div class="phase-section">
                 <div class="phase-header">受注処理フェーズ</div>
-                
+
+                <!-- ステップ0 -->
+                <div class="step-wrapper">
+                    <div class="step-card disabled" id="step-card-0">
+                        <div class="step-number">0</div>
+                        <div class="step-title">ゆうちょ銀行入金確認</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual">手動</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">ゆうちょダイレクトで入金確認</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-0" onchange="toggleCompleteExternal(this, 'step-card-0')">
+                </div>
+
                 <!-- ステップ1 -->
                 <div class="step-wrapper">
                     <div class="step-card disabled" id="step-card-1">
@@ -494,26 +510,10 @@
                 </div>
             </div>
             
-            <!-- フェーズ2: 入金・伝票準備 -->
+            <!-- フェーズ2: 新規顧客処理 -->
             <div class="phase-section">
-                <div class="phase-header">入金・伝票準備フェーズ</div>
-                
-                <!-- ステップ4 -->
-                <div class="step-wrapper">
-                    <div class="step-card disabled" id="step-card-4">
-                        <div class="step-number">4</div>
-                        <div class="step-title">入金確認</div>
-                        <div class="step-status">
-                            <span class="badge badge-manual">手動</span>
-                            <div class="note-icon">
-                                📝
-                                <div class="tooltip">入金確認アプリ 開発中</div>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
-                </div>
-                
+                <div class="phase-header">新規顧客処理フェーズ（対象０人の時はスキップ）</div>
+
                 <!-- ステップ5-1 -->
                 <div class="step-wrapper">
                     <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5-1" target="color_yayo_app" rel="noopener noreferrer">
@@ -528,6 +528,43 @@
                         </div>
                     </a>
                     <input type="checkbox" class="checkbox-external" id="task-5-1" onchange="toggleCompleteExternal(this, 'step-card-5-1')">
+                </div>
+
+                <!-- ステップ6 -->
+                <div class="step-wrapper">
+                    <div class="step-card" id="step-card-6" onclick="runYayoiCustomerImport()">
+                        <div class="step-number">6</div>
+                        <div class="step-title">弥生販売インポート 顧客台帳入力</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual-dev" id="step-6-badge">開発中</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">弥生販売自動化プログラム 開発中</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-6" onchange="toggleCompleteExternal(this, 'step-card-6')">
+                </div>
+            </div>
+
+            <!-- フェーズ3: 売上伝票作成 -->
+            <div class="phase-section">
+                <div class="phase-header">売上伝票作成フェーズ</div>
+
+                <!-- ステップ4 -->
+                <div class="step-wrapper">
+                    <div class="step-card disabled" id="step-card-4">
+                        <div class="step-number">4</div>
+                        <div class="step-title">入金記録をもとに、受注プレビュー□欄へチェックを入れる</div>
+                        <div class="step-status">
+                            <span class="badge badge-manual">手動</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">STEP3の変換ツールで操作</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
                 </div>
 
                 <!-- ステップ5-2 -->
@@ -545,27 +582,6 @@
                     </div>
                     <input type="checkbox" class="checkbox-external" id="task-5-2" onchange="toggleCompleteExternal(this, 'step-card-5-2')">
                 </div>
-            </div>
-            
-            <!-- フェーズ3: 弥生販売インポート -->
-            <div class="phase-section">
-                <div class="phase-header">弥生販売インポートフェーズ</div>
-                
-                <!-- ステップ6 -->
-                <div class="step-wrapper">
-                    <div class="step-card" id="step-card-6" onclick="runYayoiCustomerImport()">
-                        <div class="step-number">6</div>
-                        <div class="step-title">弥生販売インポート 顧客台帳入力</div>
-                        <div class="step-status">
-                            <span class="badge badge-manual-dev" id="step-6-badge">開発中</span>
-                            <div class="note-icon">
-                                📝
-                                <div class="tooltip">弥生販売自動化プログラム 開発中</div>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="checkbox" class="checkbox-external" id="task-6" onchange="toggleCompleteExternal(this, 'step-card-6')">
-                </div>
 
                 <!-- ステップ7 -->
                 <div class="step-wrapper">
@@ -582,7 +598,7 @@
                     </div>
                     <input type="checkbox" class="checkbox-external" id="task-7" onchange="toggleCompleteExternal(this, 'step-card-7')">
                 </div>
-                
+
                 <!-- ステップ8 -->
                 <div class="step-wrapper">
                     <div class="step-card" id="step-card-8">
@@ -725,8 +741,8 @@
         </div>
         
         <div class="footer">
-            <p>📊 業務フローダッシュボード ver 1.1</p>
-            <p>最終更新: 2025年12月21日</p>
+            <p>📊 業務フローダッシュボード ver 2.0</p>
+            <p>最終更新: 2026年1月16日</p>
         </div>
     </div>
 
