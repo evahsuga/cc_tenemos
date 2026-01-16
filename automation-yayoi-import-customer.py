@@ -180,21 +180,25 @@ class YayoiCustomerImportAutomation:
                 from pywinauto import Desktop
                 desktop = Desktop(backend="uia")
 
-                # 除外するウィンドウタイトルのパターン
-                exclude_patterns = [
-                    "タスク バー", "弥生販売", "受注〜配送", "cmd.exe",
-                    "Visual Studio", "エクスプローラー", "Edge", "Chrome",
-                    "Thunderbird", "メモ帳", "Program Manager"
+                # 除外するクラス名のパターン（Windowsシステムウィンドウ）
+                exclude_classes = [
+                    "Shell_", "Progman", "WorkerW", "IME", "MSCTFIME",
+                    "tooltips_", "TaskList", "Tray", "NotifyIcon"
                 ]
 
                 for window in desktop.windows():
                     try:
                         title = window.window_text()
-                        class_name = window.class_name()
+                        class_name = window.class_name() or ""
 
-                        # 空タイトルまたは非常に短いタイトルのウィンドウを探す
+                        # 空タイトルのウィンドウを探す
                         if title == "" or title is None:
-                            # 除外パターンに該当しないか確認
+                            # Shellやシステム系クラスは除外
+                            is_excluded = any(exc in class_name for exc in exclude_classes)
+                            if is_excluded:
+                                print(f"  → 除外: 空タイトル (Class: {class_name})", file=sys.stderr)
+                                continue
+
                             print(f"  → 空タイトルウィンドウ発見 (Class: {class_name})", file=sys.stderr)
 
                             # ダイアログっぽいクラス名かチェック
@@ -203,7 +207,6 @@ class YayoiCustomerImportAutomation:
                                 print(f"  → このウィンドウを使用します（デスクトップ検索）", file=sys.stderr)
                                 break
                             elif not dialog_window:
-                                # クラス名が不明でも、最初の空タイトルウィンドウを候補として保持
                                 dialog_window = window
                                 print(f"  → 候補として保持", file=sys.stderr)
                     except:
@@ -212,6 +215,68 @@ class YayoiCustomerImportAutomation:
                 print(f"  ⚠ デスクトップ検索エラー: {str(e)}", file=sys.stderr)
 
         return dialog_window
+
+    def click_next_button(self, description=""):
+        """次へ（N）ボタンをクリック（グローバルキー送信）"""
+        try:
+            print(f"\n次へボタンをクリックしています... ({description})", file=sys.stderr)
+
+            # Alt+N で次へボタンを押す（グローバルにキー送信）
+            import pywinauto.keyboard as keyboard
+            keyboard.send_keys("%n")
+            print(f"  → Alt+Nを送信しました", file=sys.stderr)
+
+            time.sleep(2.0)
+
+            print("✓ 次へボタンをクリックしました", file=sys.stderr)
+            return True
+
+        except Exception as e:
+            print(f"❌ 次へボタンクリックエラー: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return False
+
+    def select_ledger_import_option(self):
+        """台帳のインポート（2）を選択"""
+        try:
+            print("\n台帳のインポート（2）を選択しています...", file=sys.stderr)
+
+            # ラジオボタン「台帳のインポート(2)」を選択
+            # アクセスキーが2なので、2キーを押す
+            import pywinauto.keyboard as keyboard
+            keyboard.send_keys("2")
+            print(f"  → 2キーを送信しました", file=sys.stderr)
+
+            time.sleep(1.0)
+
+            print("✓ 台帳のインポート（2）を選択しました", file=sys.stderr)
+            return True
+
+        except Exception as e:
+            print(f"❌ 台帳のインポート選択エラー: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return False
+
+    def wait_for_dialog(self):
+        """ダイアログが開くまで待機"""
+        print("\n台帳インポートダイアログを確認しています...", file=sys.stderr)
+
+        # インポートダイアログが開くまで待機
+        time.sleep(2.0)
+
+        # 弥生販売プロセスの子ウィンドウからダイアログを探す
+        dialog_window = self.find_dialog_window()
+
+        if dialog_window:
+            title = dialog_window.window_text() or "(タイトルなし)"
+            class_name = dialog_window.class_name() or "(不明)"
+            print(f"✓ ダイアログを検出: {title} (Class: {class_name})", file=sys.stderr)
+            return True
+        else:
+            print("⚠ ダイアログ未検出（キー操作で続行します）", file=sys.stderr)
+            return True  # ダイアログが見つからなくてもキー操作で続行
 
     def open_customer_import_dialog(self):
         """顧客台帳インポートダイアログを開く"""
@@ -239,24 +304,10 @@ class YayoiCustomerImportAutomation:
 
                 return True
             else:
-                print("❌ インポートダイアログが見つかりませんでした", file=sys.stderr)
-                print("開いているウィンドウを確認します...", file=sys.stderr)
-
-                # デバッグ用：全てのウィンドウを列挙
-                try:
-                    from pywinauto import Desktop
-                    desktop = Desktop(backend="uia")
-                    windows = desktop.windows()
-                    print(f"\n現在開いているウィンドウ（{len(windows)}個）:", file=sys.stderr)
-                    for i, win in enumerate(windows[:10]):
-                        try:
-                            print(f"  {i+1}. {win.window_text()}", file=sys.stderr)
-                        except:
-                            pass
-                except Exception as e:
-                    print(f"ウィンドウ列挙エラー: {str(e)}", file=sys.stderr)
-
-                return False
+                print("⚠ インポートダイアログが見つかりませんでした", file=sys.stderr)
+                print("キー操作で続行を試みます...", file=sys.stderr)
+                # ダイアログが見つからなくてもキー操作で続行可能
+                return True
 
         except Exception as e:
             print(f"❌ ダイアログオープンエラー: {str(e)}", file=sys.stderr)
@@ -320,7 +371,28 @@ class YayoiCustomerImportAutomation:
             if not self.open_customer_import_dialog():
                 return {
                     'success': False,
-                    'message': '顧客台帳インポートダイアログを開けませんでした。\n\n現在は開発中のため、弥生販売のメニュー構造を調査しています。'
+                    'message': '顧客台帳インポートダイアログを開けませんでした。'
+                }
+
+            # 工程5: 次へボタンをクリック（1回目）
+            if not self.click_next_button("インポート種別選択画面"):
+                return {
+                    'success': False,
+                    'message': '次へボタン（1回目）のクリックに失敗しました。'
+                }
+
+            # 工程6: 台帳のインポート（2）を選択
+            if not self.select_ledger_import_option():
+                return {
+                    'success': False,
+                    'message': '台帳のインポート（2）の選択に失敗しました。'
+                }
+
+            # 工程7: 次へボタンをクリック（2回目）
+            if not self.click_next_button("台帳種別選択画面"):
+                return {
+                    'success': False,
+                    'message': '次へボタン（2回目）のクリックに失敗しました。'
                 }
 
             end_time = time.time()
@@ -328,7 +400,7 @@ class YayoiCustomerImportAutomation:
 
             return {
                 'success': True,
-                'message': f'顧客台帳インポート画面を開きました（{duration:.2f}秒）',
+                'message': f'顧客台帳インポート設定完了（{duration:.2f}秒）\n\n次のステップ: CSVファイルを選択してインポートを実行してください。',
                 'duration': duration
             }
 
