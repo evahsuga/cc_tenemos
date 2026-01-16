@@ -150,31 +150,66 @@ class YayoiCustomerImportAutomation:
             return False
 
     def find_dialog_window(self):
-        """弥生販売プロセスの子ダイアログを探す（Step 7と同じパターン）"""
+        """弥生販売プロセスの子ダイアログを探す"""
         dialog_window = None
+
+        # 方法1: self.app.windows() でプロセス内のウィンドウを探す
         try:
             if self.app:
-                # 弥生販売アプリケーションの全ウィンドウを取得
                 all_windows = self.app.windows()
                 print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
 
-                # メインウィンドウ以外のダイアログを探す
                 for window in all_windows:
                     try:
-                        # メインウィンドウではないものを探す
                         if window.handle != self.main_window.handle:
                             title = window.window_text() or "(タイトルなし)"
                             class_name = window.class_name()
                             print(f"  → 子ウィンドウ発見: [{title}] (Class: {class_name})", file=sys.stderr)
-
-                            # 最初に見つかったダイアログを使用
                             if not dialog_window:
                                 dialog_window = window
                                 print(f"  → このウィンドウを使用します", file=sys.stderr)
                     except:
                         pass
         except Exception as e:
-            print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
+            print(f"  ⚠ プロセス内検索エラー: {str(e)}", file=sys.stderr)
+
+        # 方法2: 見つからない場合、デスクトップから空タイトルのウィンドウを探す
+        if not dialog_window:
+            print("  プロセス内で見つからないため、デスクトップから検索...", file=sys.stderr)
+            try:
+                from pywinauto import Desktop
+                desktop = Desktop(backend="uia")
+
+                # 除外するウィンドウタイトルのパターン
+                exclude_patterns = [
+                    "タスク バー", "弥生販売", "受注〜配送", "cmd.exe",
+                    "Visual Studio", "エクスプローラー", "Edge", "Chrome",
+                    "Thunderbird", "メモ帳", "Program Manager"
+                ]
+
+                for window in desktop.windows():
+                    try:
+                        title = window.window_text()
+                        class_name = window.class_name()
+
+                        # 空タイトルまたは非常に短いタイトルのウィンドウを探す
+                        if title == "" or title is None:
+                            # 除外パターンに該当しないか確認
+                            print(f"  → 空タイトルウィンドウ発見 (Class: {class_name})", file=sys.stderr)
+
+                            # ダイアログっぽいクラス名かチェック
+                            if class_name and ("Dialog" in class_name or "#32770" in class_name or "Window" in class_name):
+                                dialog_window = window
+                                print(f"  → このウィンドウを使用します（デスクトップ検索）", file=sys.stderr)
+                                break
+                            elif not dialog_window:
+                                # クラス名が不明でも、最初の空タイトルウィンドウを候補として保持
+                                dialog_window = window
+                                print(f"  → 候補として保持", file=sys.stderr)
+                    except:
+                        pass
+            except Exception as e:
+                print(f"  ⚠ デスクトップ検索エラー: {str(e)}", file=sys.stderr)
 
         return dialog_window
 
