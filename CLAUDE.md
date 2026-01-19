@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Technology Stack
 
-- **Framework**: Electron v28.0.0 (desktop application)
+- **Framework**: Electron v40.0.0 (desktop application)
 - **Web Automation**: Puppeteer v24.34.0 with puppeteer-extra-plugin-stealth
 - **Windows Automation**: pywinauto (Python, Windows-only)
 - **UI**: Vanilla HTML/CSS/JavaScript
