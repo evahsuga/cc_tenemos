@@ -4,6 +4,7 @@
 得意先台帳画面のUI要素を列挙してExcelボタンを探す
 """
 from pywinauto import Application, Desktop
+from pywinauto.findwindows import find_windows
 import sys
 import io
 import time
@@ -14,107 +15,160 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 def inspect_yayoi_ui():
     print("=" * 60)
-    print("弥生販売 UI構造調査")
+    print("弥生販売 UI構造調査（詳細版）")
     print("=" * 60)
 
-    # デスクトップから弥生販売ウィンドウを探す
-    desktop = Desktop(backend="uia")
+    # 方法1: タイトルで弥生販売プロセスに接続
+    try:
+        print("\n--- 弥生販売プロセスに接続 ---")
+        app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=5)
+        print("✓ 弥生販売プロセスに接続しました")
 
-    yayoi_windows = []
-    for window in desktop.windows():
+        # プロセス内の全ウィンドウを取得
+        print("\n--- プロセス内の全ウィンドウ ---")
+        all_windows = app.windows()
+        print(f"ウィンドウ数: {len(all_windows)}")
+
+        for i, win in enumerate(all_windows):
+            try:
+                win_title = win.window_text() or "(タイトルなし)"
+                win_class = win.class_name() or "(クラス不明)"
+                print(f"\n[{i}] {win_title}")
+                print(f"    Class: {win_class}")
+                print(f"    Handle: {win.handle}")
+            except Exception as e:
+                print(f"[{i}] エラー: {e}")
+
+        # メインウィンドウを取得
+        print("\n--- メインウィンドウのUI構造 ---")
+        main_win = app.window(title_re=".*弥生販売.*管理者.*")
+
+        # print_control_identifiers で全構造をダンプ（最初の部分のみ）
+        print("\n--- コントロール構造（深さ3まで） ---")
         try:
-            title = window.window_text()
-            if "弥生販売" in title or "得意先台帳" in title:
-                yayoi_windows.append((window, title))
-                print(f"\n発見: {title}")
-        except:
-            pass
-
-    if not yayoi_windows:
-        print("❌ 弥生販売のウィンドウが見つかりません")
-        return
-
-    # 各ウィンドウのUI構造を調査
-    for window, title in yayoi_windows:
-        print(f"\n{'=' * 60}")
-        print(f"ウィンドウ: {title}")
-        print(f"{'=' * 60}")
-
-        try:
-            # Applicationオブジェクトとして接続
-            app = Application(backend="uia").connect(handle=window.handle)
-            main_win = app.window(handle=window.handle)
-
-            print("\n--- ツールバー検索 ---")
-            try:
-                toolbars = main_win.children(control_type="ToolBar")
-                print(f"ツールバー数: {len(toolbars)}")
-                for i, tb in enumerate(toolbars):
-                    tb_name = tb.window_text() or "(名前なし)"
-                    print(f"\n  ToolBar[{i}]: {tb_name}")
-                    try:
-                        buttons = tb.children()
-                        for j, btn in enumerate(buttons):
-                            btn_name = btn.window_text() or "(名前なし)"
-                            btn_type = btn.control_type() or "(不明)"
-                            print(f"    [{j}] {btn_name} ({btn_type})")
-                    except Exception as e:
-                        print(f"    ボタン列挙エラー: {e}")
-            except Exception as e:
-                print(f"ツールバー検索エラー: {e}")
-
-            print("\n--- 全コントロール探索（Excel関連） ---")
-            try:
-                found_excel = False
-                for ctrl in main_win.descendants():
-                    try:
-                        ctrl_name = ctrl.window_text() or ""
-                        ctrl_type = ctrl.control_type() or ""
-                        ctrl_class = ctrl.class_name() or ""
-
-                        # Excel関連を探す
-                        if "Excel" in ctrl_name or "excel" in ctrl_name.lower():
-                            found_excel = True
-                            print(f"  ★ Excel発見: [{ctrl_name}]")
-                            print(f"       Type: {ctrl_type}")
-                            print(f"       Class: {ctrl_class}")
-                            try:
-                                rect = ctrl.rectangle()
-                                print(f"       位置: ({rect.left}, {rect.top}) - ({rect.right}, {rect.bottom})")
-                            except:
-                                pass
-                    except:
-                        pass
-
-                if not found_excel:
-                    print("  Excelコントロールは見つかりませんでした")
-
-            except Exception as e:
-                print(f"全探索エラー: {e}")
-
-            print("\n--- 子ウィンドウ一覧 ---")
-            try:
-                children = main_win.children()
-                print(f"直接の子要素数: {len(children)}")
-                for i, child in enumerate(children[:20]):  # 最初の20個
-                    child_name = child.window_text() or "(名前なし)"
-                    child_type = child.control_type() or "(不明)"
-                    child_class = child.class_name() or "(不明)"
-                    print(f"  [{i}] {child_name[:30]} ({child_type}) - {child_class}")
-            except Exception as e:
-                print(f"子ウィンドウ列挙エラー: {e}")
-
+            main_win.print_control_identifiers(depth=3)
         except Exception as e:
-            print(f"ウィンドウ調査エラー: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"構造ダンプエラー: {e}")
+
+        # 得意先台帳を探す
+        print("\n--- 「得意先台帳」を含むコントロール ---")
+        try:
+            for ctrl in main_win.descendants():
+                try:
+                    ctrl_name = ctrl.window_text() or ""
+                    if "得意先" in ctrl_name or "台帳" in ctrl_name:
+                        ctrl_class = ctrl.class_name() or ""
+                        print(f"  ★ 発見: [{ctrl_name}] (Class: {ctrl_class})")
+                except:
+                    pass
+        except Exception as e:
+            print(f"検索エラー: {e}")
+
+        # Excel関連を探す
+        print("\n--- 「Excel」を含むコントロール ---")
+        try:
+            found = False
+            for ctrl in main_win.descendants():
+                try:
+                    ctrl_name = ctrl.window_text() or ""
+                    if "Excel" in ctrl_name:
+                        found = True
+                        ctrl_class = ctrl.class_name() or ""
+                        print(f"  ★ 発見: [{ctrl_name}] (Class: {ctrl_class})")
+                        try:
+                            rect = ctrl.rectangle()
+                            print(f"       位置: ({rect.left}, {rect.top}, {rect.right}, {rect.bottom})")
+                        except:
+                            pass
+                except:
+                    pass
+            if not found:
+                print("  Excelコントロールは見つかりませんでした")
+        except Exception as e:
+            print(f"Excel検索エラー: {e}")
+
+        # ボタンを全て列挙
+        print("\n--- 全ボタン一覧（最初の30個） ---")
+        try:
+            button_count = 0
+            for ctrl in main_win.descendants():
+                try:
+                    ctrl_class = ctrl.class_name() or ""
+                    if "Button" in ctrl_class or ctrl_class == "Button":
+                        ctrl_name = ctrl.window_text() or "(名前なし)"
+                        print(f"  Button: [{ctrl_name}] (Class: {ctrl_class})")
+                        button_count += 1
+                        if button_count >= 30:
+                            print("  ... (30個で打ち切り)")
+                            break
+                except:
+                    pass
+            if button_count == 0:
+                print("  ボタンが見つかりませんでした")
+        except Exception as e:
+            print(f"ボタン検索エラー: {e}")
+
+    except Exception as e:
+        print(f"接続エラー: {e}")
+        import traceback
+        traceback.print_exc()
+
+    # 方法2: Win32 APIで子ウィンドウを探す
+    print("\n" + "=" * 60)
+    print("Win32 API による子ウィンドウ検索")
+    print("=" * 60)
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.windll.user32
+
+        # 弥生販売のメインウィンドウを探す
+        def enum_windows_callback(hwnd, results):
+            length = user32.GetWindowTextLengthW(hwnd)
+            if length > 0:
+                buffer = ctypes.create_unicode_buffer(length + 1)
+                user32.GetWindowTextW(hwnd, buffer, length + 1)
+                title = buffer.value
+                if "弥生販売" in title:
+                    results.append((hwnd, title))
+            return True
+
+        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        results = []
+        user32.EnumWindows(WNDENUMPROC(enum_windows_callback), 0)
+
+        print(f"\n弥生販売ウィンドウ数: {len(results)}")
+        for hwnd, title in results:
+            print(f"  HWND: {hwnd}, Title: {title}")
+
+            # 子ウィンドウを列挙
+            def enum_child_callback(child_hwnd, child_results):
+                length = user32.GetWindowTextLengthW(child_hwnd)
+                buffer = ctypes.create_unicode_buffer(length + 1)
+                user32.GetWindowTextW(child_hwnd, buffer, length + 1)
+                title = buffer.value
+                child_results.append((child_hwnd, title))
+                return True
+
+            child_results = []
+            user32.EnumChildWindows(hwnd, WNDENUMPROC(enum_child_callback), 0)
+            print(f"    子ウィンドウ数: {len(child_results)}")
+
+            # Excel関連の子ウィンドウを探す
+            for child_hwnd, child_title in child_results:
+                if child_title and ("Excel" in child_title or "得意先" in child_title):
+                    print(f"    ★ 発見: HWND={child_hwnd}, Title={child_title}")
+
+    except Exception as e:
+        print(f"Win32 API エラー: {e}")
 
     print("\n" + "=" * 60)
     print("調査完了")
     print("=" * 60)
 
 if __name__ == '__main__':
-    # 得意先台帳が開いている状態で実行してください
     print("※ 弥生販売で得意先台帳画面を開いた状態で実行してください")
     print("")
     inspect_yayoi_ui()
