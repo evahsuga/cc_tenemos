@@ -6,13 +6,15 @@ echo ╚════════════════════════
 echo.
 
 echo [1/3] 最新版を取得しています...
-git pull
+git fetch origin
 if %errorlevel% neq 0 (
     echo.
     echo ⚠ 更新に失敗しました。ネットワーク接続を確認してください。
     pause
     exit /b 1
 )
+git reset --hard origin/master
+echo ✓ 最新版に更新しました
 
 echo.
 echo [2/3] 依存関係を更新しています...

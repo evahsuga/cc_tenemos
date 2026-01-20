@@ -9,13 +9,15 @@ echo ""
 cd "$(dirname "$0")"
 
 echo "[1/3] 最新版を取得しています..."
-git pull
+git fetch origin
 if [ $? -ne 0 ]; then
     echo ""
     echo "⚠ 更新に失敗しました。ネットワーク接続を確認してください。"
     read -p "Enterキーを押して終了..."
     exit 1
 fi
+git reset --hard origin/master
+echo "✓ 最新版に更新しました"
 
 echo ""
 echo "[2/3] 依存関係を更新しています..."
