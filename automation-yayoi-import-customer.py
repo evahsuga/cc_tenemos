@@ -114,17 +114,17 @@ class YayoiCustomerImportAutomation:
             # 方法1: メニューバーから選択
             # メインウィンドウをアクティブにする
             self.main_window.set_focus()
-            time.sleep(0.5)
+            time.sleep(0.35)
 
             # Alt+F でファイルメニューを開く
             print("ファイルメニューを開いています...", file=sys.stderr)
             self.main_window.type_keys("%f")  # Alt+F
-            time.sleep(1.0)
+            time.sleep(0.7)
 
             # 「インポート(I)」を選択（アクセスキーがIなのでIキーを押す）
             print("インポートメニューを選択しています...", file=sys.stderr)
             self.main_window.type_keys("i")  # I キー
-            time.sleep(1.5)
+            time.sleep(1.0)
 
             print("✓ インポートメニューを開きました", file=sys.stderr)
             return True
@@ -140,7 +140,7 @@ class YayoiCustomerImportAutomation:
 
             # 「台帳インポート(A)」を選択（アクセスキーがAなのでAキーを押す）
             self.main_window.type_keys("a")  # A キー
-            time.sleep(1.5)
+            time.sleep(1.0)
 
             print("✓ 台帳インポートを選択しました", file=sys.stderr)
             return True
@@ -226,7 +226,7 @@ class YayoiCustomerImportAutomation:
             keyboard.send_keys("%n")
             print(f"  → Alt+Nを送信しました", file=sys.stderr)
 
-            time.sleep(2.0)
+            time.sleep(1.4)
 
             print("✓ 次へボタンをクリックしました", file=sys.stderr)
             return True
@@ -248,7 +248,7 @@ class YayoiCustomerImportAutomation:
             keyboard.send_keys("2")
             print(f"  → 2キーを送信しました", file=sys.stderr)
 
-            time.sleep(1.0)
+            time.sleep(0.7)
 
             print("✓ 台帳のインポート（2）を選択しました", file=sys.stderr)
             return True
@@ -264,7 +264,7 @@ class YayoiCustomerImportAutomation:
         print("\n台帳インポートダイアログを確認しています...", file=sys.stderr)
 
         # インポートダイアログが開くまで待機
-        time.sleep(2.0)
+        time.sleep(1.4)
 
         # 弥生販売プロセスの子ウィンドウからダイアログを探す
         dialog_window = self.find_dialog_window()
@@ -284,7 +284,7 @@ class YayoiCustomerImportAutomation:
             print("\n顧客台帳インポートダイアログを確認しています...", file=sys.stderr)
 
             # インポートダイアログが開くまで待機
-            time.sleep(2.0)
+            time.sleep(1.4)
 
             # 弥生販売プロセスの子ウィンドウからダイアログを探す
             dialog_window = self.find_dialog_window()
@@ -300,7 +300,7 @@ class YayoiCustomerImportAutomation:
 
                 # ダイアログにフォーカスを移す
                 dialog_window.set_focus()
-                time.sleep(0.5)
+                time.sleep(0.35)
 
                 return True
             else:

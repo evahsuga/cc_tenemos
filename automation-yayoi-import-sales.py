@@ -114,17 +114,17 @@ class YayoiSalesImportAutomation:
             # 方法1: メニューバーから選択
             # メインウィンドウをアクティブにする
             self.main_window.set_focus()
-            time.sleep(0.5)
+            time.sleep(0.35)
 
             # Alt+F でファイルメニューを開く
             print("ファイルメニューを開いています...", file=sys.stderr)
             self.main_window.type_keys("%f")  # Alt+F
-            time.sleep(1.0)
+            time.sleep(0.7)
 
             # 「インポート(I)」を選択（アクセスキーがIなのでIキーを押す）
             print("インポートメニューを選択しています...", file=sys.stderr)
             self.main_window.type_keys("i")  # I キー
-            time.sleep(1.5)
+            time.sleep(1.0)
 
             print("✓ インポートメニューを開きました", file=sys.stderr)
             return True
@@ -140,13 +140,13 @@ class YayoiSalesImportAutomation:
 
             # 「取引インポート(B)」を選択（アクセスキーがBなのでBキーを押す）
             self.main_window.type_keys("b")  # B キー
-            time.sleep(2.0)  # ダイアログが開くまで待機（1.5秒→2.0秒に延長）
+            time.sleep(1.4)  # ダイアログが開くまで待機
 
             print("✓ 取引インポートを選択しました", file=sys.stderr)
 
             # ダイアログが開くまで追加で待機
             print("  ダイアログが開くまで待機中...", file=sys.stderr)
-            time.sleep(1.5)
+            time.sleep(1.0)
 
             return True
 
@@ -193,7 +193,7 @@ class YayoiSalesImportAutomation:
             if dialog_window:
                 # ダイアログにフォーカスを移す
                 dialog_window.set_focus()
-                time.sleep(0.5)
+                time.sleep(0.35)
                 # Alt+N で次へボタンを押す
                 dialog_window.type_keys("%n")
                 print(f"  → ダイアログにAlt+Nを送信しました", file=sys.stderr)
@@ -203,7 +203,7 @@ class YayoiSalesImportAutomation:
                 keyboard.send_keys("%n")
                 print(f"  → グローバルにAlt+Nを送信しました", file=sys.stderr)
 
-            time.sleep(2.0)
+            time.sleep(1.4)
 
             print("✓ 次へボタンをクリックしました", file=sys.stderr)
             return True
@@ -221,7 +221,7 @@ class YayoiSalesImportAutomation:
             print("  ※デフォルトで選択されているため、何もしません", file=sys.stderr)
 
             # 伝票インポート（１）はデフォルトで選択されているので、何もしない
-            time.sleep(0.5)
+            time.sleep(0.35)
 
             print("✓ 伝票インポート（１）はすでに選択されています", file=sys.stderr)
             return True
@@ -266,24 +266,24 @@ class YayoiSalesImportAutomation:
             # ダイアログまたはグローバルに操作を送信
             if dialog_window:
                 dialog_window.set_focus()
-                time.sleep(0.5)
+                time.sleep(0.35)
 
                 # Alt+D でコンボボックスにアクセス
                 print("  → Alt+D でコンボボックスを開きます", file=sys.stderr)
                 dialog_window.type_keys("%d")
-                time.sleep(0.5)
+                time.sleep(0.35)
 
                 # HOMEキーで最初の項目（見積書）に移動
                 dialog_window.type_keys("{HOME}")
-                time.sleep(0.3)
+                time.sleep(0.2)
 
                 # 下矢印キーを2回押して売上伝票に移動
                 # 順番: 見積書(0) → 受注伝票(1) → 売上伝票(2)
                 print("  → 下矢印キーで売上伝票を選択します", file=sys.stderr)
                 dialog_window.type_keys("{DOWN}")
-                time.sleep(0.2)
+                time.sleep(0.15)
                 dialog_window.type_keys("{DOWN}")
-                time.sleep(0.2)
+                time.sleep(0.15)
 
                 # ENTERで確定
                 dialog_window.type_keys("{ENTER}")
@@ -293,17 +293,17 @@ class YayoiSalesImportAutomation:
                 import pywinauto.keyboard as keyboard
                 print("  → グローバルに操作を送信します", file=sys.stderr)
                 keyboard.send_keys("%d")
-                time.sleep(0.5)
+                time.sleep(0.35)
                 keyboard.send_keys("{HOME}")
-                time.sleep(0.3)
-                keyboard.send_keys("{DOWN}")
                 time.sleep(0.2)
                 keyboard.send_keys("{DOWN}")
-                time.sleep(0.2)
+                time.sleep(0.15)
+                keyboard.send_keys("{DOWN}")
+                time.sleep(0.15)
                 keyboard.send_keys("{ENTER}")
                 print(f"  → 売上伝票を選択しました（グローバル操作）", file=sys.stderr)
 
-            time.sleep(1.0)
+            time.sleep(0.7)
 
             print("✓ 売上伝票を選択しました", file=sys.stderr)
             return True
@@ -412,7 +412,7 @@ class YayoiSalesImportAutomation:
 
             # 次の画面が開くまで待機
             print("次の画面が開くまで待機中...", file=sys.stderr)
-            time.sleep(2.0)
+            time.sleep(1.4)
 
             # デバッグ用：現在のダイアログ情報を出力
             self.debug_print_current_dialog()
