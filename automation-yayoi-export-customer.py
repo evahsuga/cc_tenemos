@@ -29,78 +29,30 @@ class YayoiCustomerExportAutomation:
         self.output_filename = f"DLca_APP_INP00000{datetime.now().strftime('%y%m%d')}"
 
     def connect_to_yayoi(self):
-        """弥生販売に接続（メインウィンドウを優先的に選択）"""
+        """弥生販売に接続（Applicationオブジェクト経由）"""
         try:
             print("弥生販売に接続しています...", file=sys.stderr)
 
-            # デスクトップから全ウィンドウを取得して、適切なメインウィンドウを探す
-            from pywinauto import Desktop
-            desktop = Desktop(backend="uia")
+            # Applicationオブジェクトとして接続（管理者ウィンドウを優先）
+            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*管理者.*", timeout=5)
+            self.main_window = self.app.window(title_re=".*弥生販売.*管理者.*")
 
-            # 弥生販売のウィンドウを全て取得
-            yayoi_windows = []
-            for window in desktop.windows():
-                try:
-                    title = window.window_text()
-                    if "弥生販売" in title:
-                        yayoi_windows.append((window, title))
-                        print(f"  発見: {title}", file=sys.stderr)
-                except:
-                    pass
-
-            if not yayoi_windows:
-                print("❌ 弥生販売のウィンドウが見つかりません", file=sys.stderr)
-                return False
-
-            # メインウィンドウを選択する優先順位
-            selected_window = None
-
-            # 優先度1: 「管理者」を含むウィンドウ
-            for window, title in yayoi_windows:
-                if "管理者" in title and "伝票" not in title and "台帳" not in title:
-                    selected_window = (window, title)
-                    print(f"  → メインウィンドウ（管理者）を選択: {title}", file=sys.stderr)
-                    break
-
-            # 優先度2: 「プロフェッショナル」を含むウィンドウ
-            if not selected_window:
-                for window, title in yayoi_windows:
-                    if "プロフェッショナル" in title and "伝票" not in title and "台帳" not in title:
-                        selected_window = (window, title)
-                        print(f"  → メインウィンドウ（プロフェッショナル）を選択: {title}", file=sys.stderr)
-                        break
-
-            # 優先度3: 「スタンダード」を含むウィンドウ
-            if not selected_window:
-                for window, title in yayoi_windows:
-                    if "スタンダード" in title and "伝票" not in title and "台帳" not in title:
-                        selected_window = (window, title)
-                        print(f"  → メインウィンドウ（スタンダード）を選択: {title}", file=sys.stderr)
-                        break
-
-            # 優先度4: 最初に見つかった弥生販売ウィンドウ
-            if not selected_window:
-                for window, title in yayoi_windows:
-                    if "伝票" not in title and "台帳" not in title:
-                        selected_window = (window, title)
-                        print(f"  → メインウィンドウ（デフォルト）を選択: {title}", file=sys.stderr)
-                        break
-
-            if not selected_window:
-                print("❌ メインウィンドウを特定できませんでした", file=sys.stderr)
-                return False
-
-            self.main_window = selected_window[0]
-
-            # Applicationオブジェクトを取得
-            self.app = Application(backend="uia").connect(handle=self.main_window.handle)
-
-            print(f"✓ 弥生販売に接続しました: {selected_window[1]}", file=sys.stderr)
+            title = self.main_window.window_text()
+            print(f"✓ 弥生販売に接続しました: {title}", file=sys.stderr)
             return True
 
         except ElementNotFoundError:
-            print("❌ 弥生販売が起動していません", file=sys.stderr)
-            return False
+            # 管理者ウィンドウがない場合、一般的な弥生販売ウィンドウを探す
+            try:
+                print("  → 管理者ウィンドウが見つからないため、他のウィンドウを探します...", file=sys.stderr)
+                self.app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=5)
+                self.main_window = self.app.window(title_re=".*弥生販売.*")
+                title = self.main_window.window_text()
+                print(f"✓ 弥生販売に接続しました: {title}", file=sys.stderr)
+                return True
+            except Exception as e:
+                print(f"❌ 弥生販売が起動していません: {str(e)}", file=sys.stderr)
+                return False
         except Exception as e:
             print(f"❌ 接続エラー: {str(e)}", file=sys.stderr)
             import traceback
@@ -136,7 +88,7 @@ class YayoiCustomerExportAutomation:
             return False
 
     def click_excel_button(self):
-        """Excelボタンをクリック（メインウィンドウ内のツールバーから）"""
+        """Excelボタンをクリック（得意先台帳ウィンドウ内から）"""
         try:
             print("\nExcelボタンをクリックしています...", file=sys.stderr)
 
@@ -144,79 +96,55 @@ class YayoiCustomerExportAutomation:
             self.main_window.set_focus()
             time.sleep(0.35)
 
-            # 方法1: UIAutomation でExcelボタンを探す
+            # 方法1: UIAutomation でExcelボタンを探す（タイトル検索）
             try:
                 print("  → UIAutomationでExcelボタンを検索中...", file=sys.stderr)
-                # メインウィンドウの子孫からExcelボタンを探す
-                excel_button = self.main_window.child_window(title="Excel", control_type="Button")
-                if excel_button.exists(timeout=2):
-                    print("  ✓ Excelボタンを発見", file=sys.stderr)
-                    excel_button.click()
+                # メインウィンドウの子孫からExcelを探す
+                excel_ctrl = self.main_window.child_window(title="Excel")
+                if excel_ctrl.exists(timeout=3):
+                    print("  ✓ Excelコントロールを発見", file=sys.stderr)
+                    excel_ctrl.click_input()  # click_input を使用（より確実）
                     time.sleep(1.0)
                     print("✓ Excelボタンをクリックしました", file=sys.stderr)
                     return True
             except Exception as e:
-                print(f"  → Button検索失敗: {str(e)}", file=sys.stderr)
+                print(f"  → child_window検索失敗: {str(e)}", file=sys.stderr)
 
-            # 方法2: ToolBarを探してボタンを列挙
+            # 方法2: 全子孫を探索してExcelを探す
             try:
-                print("  → ツールバーを検索中...", file=sys.stderr)
-                toolbars = self.main_window.children(control_type="ToolBar")
-                for toolbar in toolbars:
-                    toolbar_name = toolbar.window_text()
-                    print(f"    → ツールバー: {toolbar_name}", file=sys.stderr)
-                    buttons = toolbar.children(control_type="Button")
-                    for btn in buttons:
-                        btn_name = btn.window_text()
-                        if btn_name:
-                            print(f"      → ボタン: {btn_name}", file=sys.stderr)
-                        if "Excel" in btn_name:
-                            btn.click()
+                print("  → 全子孫を探索中...", file=sys.stderr)
+                for ctrl in self.main_window.descendants():
+                    try:
+                        ctrl_name = ctrl.window_text() or ""
+                        if ctrl_name == "Excel":
+                            print(f"  ✓ Excelを発見: [{ctrl_name}]", file=sys.stderr)
+                            ctrl.click_input()
                             time.sleep(1.0)
                             print("✓ Excelボタンをクリックしました", file=sys.stderr)
                             return True
-            except Exception as e:
-                print(f"  → ToolBar検索失敗: {str(e)}", file=sys.stderr)
-
-            # 方法3: 全コントロールを探索してExcel関連を探す
-            try:
-                print("  → 全コントロールを探索中...", file=sys.stderr)
-                # 子孫を取得（深さ制限）
-                for ctrl in self.main_window.descendants(depth=5):
-                    try:
-                        ctrl_name = ctrl.window_text() or ""
-                        ctrl_type = ctrl.control_type() or ""
-                        if "Excel" in ctrl_name:
-                            print(f"    → Excel関連発見: [{ctrl_name}] ({ctrl_type})", file=sys.stderr)
-                            if ctrl_type in ["Button", "MenuItem", "SplitButton"]:
-                                ctrl.click()
-                                time.sleep(1.0)
-                                print("✓ Excelコントロールをクリックしました", file=sys.stderr)
-                                return True
                     except:
                         pass
             except Exception as e:
                 print(f"  → 全探索失敗: {str(e)}", file=sys.stderr)
 
-            # 方法4: キーボードショートカットを試行（Alt + ツールバーアクセス）
-            print("  → キーボードショートカットを試行...", file=sys.stderr)
-            import pywinauto.keyboard as keyboard
+            # 方法3: 座標クリック（デバッグ結果: 669, 102 - 714, 149）
+            # 中心座標を計算: (691, 125)
+            print("  → 座標クリックを試行...", file=sys.stderr)
+            try:
+                import pywinauto.mouse as mouse
+                # Excelボタンの中心座標（デバッグで取得した値）
+                excel_x = (669 + 714) // 2  # 691
+                excel_y = (102 + 149) // 2  # 125
+                print(f"    → クリック座標: ({excel_x}, {excel_y})", file=sys.stderr)
+                mouse.click(coords=(excel_x, excel_y))
+                time.sleep(1.0)
+                print("✓ 座標クリックでExcelボタンをクリックしました", file=sys.stderr)
+                return True
+            except Exception as e:
+                print(f"  → 座標クリック失敗: {str(e)}", file=sys.stderr)
 
-            # F6でツールバーにフォーカスを移動（Windows共通）
-            keyboard.send_keys("{F6}")
-            time.sleep(0.3)
-
-            # Excelボタンまで移動（右矢印キー）
-            # ツールバー順: 戻る, 進む, 新規作成, コード付番, 削除, 参照, ウィザード, Excel
-            for i in range(8):
-                keyboard.send_keys("{RIGHT}")
-                time.sleep(0.1)
-
-            # Enterで実行
-            keyboard.send_keys("{ENTER}")
-            time.sleep(1.0)
-            print("✓ キーボードでExcelボタンをクリック試行", file=sys.stderr)
-            return True
+            print("❌ Excelボタンが見つかりませんでした", file=sys.stderr)
+            return False
 
         except Exception as e:
             print(f"❌ Excelボタンクリックエラー: {str(e)}", file=sys.stderr)
