@@ -21,7 +21,8 @@ def inspect_yayoi_ui():
     # 方法1: タイトルで弥生販売プロセスに接続
     try:
         print("\n--- 弥生販売プロセスに接続 ---")
-        app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=5)
+        # 複数ウィンドウがある場合は最初のものを選択
+        app = Application(backend="uia").connect(title_re=".*弥生販売.*管理者.*", timeout=5)
         print("✓ 弥生販売プロセスに接続しました")
 
         # プロセス内の全ウィンドウを取得
@@ -124,45 +125,59 @@ def inspect_yayoi_ui():
 
         user32 = ctypes.windll.user32
 
-        # 弥生販売のメインウィンドウを探す
-        def enum_windows_callback(hwnd, results):
+        # グローバルリストでウィンドウを収集
+        global win32_results
+        win32_results = []
+
+        def enum_windows_callback(hwnd, lparam):
             length = user32.GetWindowTextLengthW(hwnd)
             if length > 0:
                 buffer = ctypes.create_unicode_buffer(length + 1)
                 user32.GetWindowTextW(hwnd, buffer, length + 1)
                 title = buffer.value
-                if "弥生販売" in title:
-                    results.append((hwnd, title))
+                if "弥生販売" in title or "得意先" in title:
+                    win32_results.append((hwnd, title))
             return True
 
         WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-        results = []
-        user32.EnumWindows(WNDENUMPROC(enum_windows_callback), 0)
+        callback = WNDENUMPROC(enum_windows_callback)
+        user32.EnumWindows(callback, 0)
 
-        print(f"\n弥生販売ウィンドウ数: {len(results)}")
-        for hwnd, title in results:
+        print(f"\n弥生販売関連ウィンドウ数: {len(win32_results)}")
+        for hwnd, title in win32_results:
             print(f"  HWND: {hwnd}, Title: {title}")
 
             # 子ウィンドウを列挙
-            def enum_child_callback(child_hwnd, child_results):
+            global child_win_results
+            child_win_results = []
+
+            def enum_child_callback(child_hwnd, lparam):
                 length = user32.GetWindowTextLengthW(child_hwnd)
                 buffer = ctypes.create_unicode_buffer(length + 1)
                 user32.GetWindowTextW(child_hwnd, buffer, length + 1)
                 title = buffer.value
-                child_results.append((child_hwnd, title))
+                if title:  # タイトルがあるもののみ
+                    child_win_results.append((child_hwnd, title))
                 return True
 
-            child_results = []
-            user32.EnumChildWindows(hwnd, WNDENUMPROC(enum_child_callback), 0)
-            print(f"    子ウィンドウ数: {len(child_results)}")
+            child_callback = WNDENUMPROC(enum_child_callback)
+            user32.EnumChildWindows(hwnd, child_callback, 0)
+            print(f"    子ウィンドウ数（タイトルあり）: {len(child_win_results)}")
 
             # Excel関連の子ウィンドウを探す
-            for child_hwnd, child_title in child_results:
-                if child_title and ("Excel" in child_title or "得意先" in child_title):
+            for child_hwnd, child_title in child_win_results:
+                if "Excel" in child_title or "得意先" in child_title or "台帳" in child_title:
                     print(f"    ★ 発見: HWND={child_hwnd}, Title={child_title}")
+
+            # 子ウィンドウを最初の20個表示
+            print(f"    子ウィンドウ一覧（最初の20個）:")
+            for i, (child_hwnd, child_title) in enumerate(child_win_results[:20]):
+                print(f"      [{i}] {child_title}")
 
     except Exception as e:
         print(f"Win32 API エラー: {e}")
+        import traceback
+        traceback.print_exc()
 
     print("\n" + "=" * 60)
     print("調査完了")
