@@ -156,21 +156,33 @@ class YayoiCustomerExportAutomation:
         """Excelへの書き出しダイアログを探す"""
         try:
             print("\n「Excelへの書き出し」ダイアログを探しています...", file=sys.stderr)
-            time.sleep(1.0)
+            time.sleep(1.5)  # ダイアログが開くまで待機
 
-            # プロセス内のウィンドウを探す
+            # 方法1: プロセス内のウィンドウを探す
             if self.app:
                 all_windows = self.app.windows()
+                print(f"  → プロセス内ウィンドウ数: {len(all_windows)}", file=sys.stderr)
                 for window in all_windows:
                     try:
                         title = window.window_text() or ""
+                        print(f"    → ウィンドウ: {title}", file=sys.stderr)
                         if "Excel" in title or "書き出し" in title:
                             print(f"  ✓ エクスポートダイアログを発見: {title}", file=sys.stderr)
                             return window
                     except:
                         pass
 
-            # デスクトップからも検索
+            # 方法2: メインウィンドウの子ウィンドウとして探す
+            try:
+                export_dialog = self.main_window.child_window(title_re=".*Excel.*書き出し.*")
+                if export_dialog.exists(timeout=2):
+                    title = export_dialog.window_text()
+                    print(f"  ✓ エクスポートダイアログを発見（子ウィンドウ）: {title}", file=sys.stderr)
+                    return export_dialog
+            except Exception as e:
+                print(f"  → 子ウィンドウ検索失敗: {str(e)}", file=sys.stderr)
+
+            # 方法3: デスクトップからも検索
             from pywinauto import Desktop
             desktop = Desktop(backend="uia")
             for window in desktop.windows():
@@ -178,7 +190,9 @@ class YayoiCustomerExportAutomation:
                     title = window.window_text() or ""
                     if "Excel" in title and "書き出し" in title:
                         print(f"  ✓ エクスポートダイアログを発見（デスクトップ）: {title}", file=sys.stderr)
-                        return window
+                        # Applicationとして接続し直す
+                        dialog_app = Application(backend="uia").connect(handle=window.handle)
+                        return dialog_app.window(handle=window.handle)
                 except:
                     pass
 
@@ -196,52 +210,72 @@ class YayoiCustomerExportAutomation:
 
             # ダイアログをアクティブにする
             dialog_window.set_focus()
-            time.sleep(0.35)
+            time.sleep(0.5)
 
-            # 名称フィールドに移動（Alt+S または Tab）
-            # スクリーンショットより「出力先(S)」セクションの「名称」フィールド
             import pywinauto.keyboard as keyboard
 
-            # 方法1: Alt+S で出力先セクションにフォーカス（機能しない可能性）
-            # 方法2: Tab移動で名称フィールドに到達
-            # ダイアログの構造: 出力形式 → 出力条件 → 出力先（場所、名称）→ ボタン
-
-            # 名称フィールドにフォーカスを移動
-            # 「名称」のエディットボックスを探す
+            # 方法1: 名称フィールドを直接探す
             try:
-                name_edit = dialog_window.child_window(control_type="Edit")
-                edits = dialog_window.children(control_type="Edit")
-                print(f"  → Editコントロール数: {len(edits)}", file=sys.stderr)
-                for i, edit in enumerate(edits):
-                    edit_name = edit.window_text()
-                    print(f"    → Edit[{i}]: '{edit_name}'", file=sys.stderr)
+                print("  → 名称フィールドを検索中...", file=sys.stderr)
+                # ダイアログ内のEditコントロールを探す
+                edits = []
+                for ctrl in dialog_window.descendants():
+                    try:
+                        ctrl_class = ctrl.class_name() or ""
+                        if "Edit" in ctrl_class:
+                            ctrl_text = ctrl.window_text() or "(空)"
+                            edits.append(ctrl)
+                            print(f"    → Edit発見: '{ctrl_text}'", file=sys.stderr)
+                    except:
+                        pass
 
-                # 最後のEditが名称フィールドの可能性が高い
-                if len(edits) >= 1:
-                    name_field = edits[-1]  # 最後のEditフィールド
+                print(f"  → Editコントロール数: {len(edits)}", file=sys.stderr)
+
+                # 名称フィールドは通常最後のEditフィールド
+                if edits:
+                    name_field = edits[-1]
                     name_field.set_focus()
                     time.sleep(0.2)
                     # 既存のテキストをクリアしてファイル名を入力
-                    name_field.type_keys("^a")  # Ctrl+A で全選択
+                    name_field.type_keys("^a", set_foreground=False)  # Ctrl+A で全選択
                     time.sleep(0.1)
-                    name_field.type_keys(self.output_filename, with_spaces=True)
+                    name_field.type_keys(self.output_filename, with_spaces=True, set_foreground=False)
                     print(f"  ✓ ファイル名を入力しました: {self.output_filename}", file=sys.stderr)
+                else:
+                    raise Exception("Editフィールドが見つかりません")
+
             except Exception as e:
-                print(f"  → Edit検索失敗、Tab移動を試行: {str(e)}", file=sys.stderr)
-                # Tab移動で名称フィールドへ
-                for i in range(10):
+                print(f"  → Edit検索失敗: {str(e)}", file=sys.stderr)
+                print("  → キーボード操作でファイル名を入力します...", file=sys.stderr)
+
+                # Tab移動で名称フィールドへ（ダイアログの構造に依存）
+                # 出力形式 → 順序 → 更新日付 → 範囲(2つ) → 場所 → 名称
+                for i in range(8):
                     keyboard.send_keys("{TAB}")
                     time.sleep(0.1)
-                keyboard.send_keys("^a")
+
+                # ファイル名を入力
+                keyboard.send_keys("^a")  # 全選択
                 time.sleep(0.1)
                 keyboard.send_keys(self.output_filename)
-                print(f"  → Tab移動でファイル名を入力しました", file=sys.stderr)
+                print(f"  → キーボードでファイル名を入力しました: {self.output_filename}", file=sys.stderr)
 
             time.sleep(0.5)
 
-            # OKボタンをクリック（Enterキー）
+            # OKボタンをクリック
             print("OKボタンをクリックしています...", file=sys.stderr)
-            keyboard.send_keys("{ENTER}")
+            try:
+                ok_button = dialog_window.child_window(title="OK")
+                if ok_button.exists(timeout=2):
+                    ok_button.click_input()
+                    print("  ✓ OKボタンをクリックしました", file=sys.stderr)
+                else:
+                    keyboard.send_keys("{ENTER}")
+                    print("  → Enterキーを送信しました", file=sys.stderr)
+            except:
+                keyboard.send_keys("{ENTER}")
+                print("  → Enterキーを送信しました", file=sys.stderr)
+
             time.sleep(2.0)
 
             print("✓ エクスポートを実行しました", file=sys.stderr)
@@ -272,7 +306,6 @@ class YayoiCustomerExportAutomation:
                     'message': '顧客台帳を開けませんでした。'
                 }
 
-            # === Phase 1-B: Excelボタンクリック ===
             # 工程3: Excelボタンをクリック
             if not self.click_excel_button():
                 return {
@@ -280,45 +313,31 @@ class YayoiCustomerExportAutomation:
                     'message': 'Excelボタンのクリックに失敗しました。'
                 }
 
-            # 工程4: エクスポートダイアログを確認
+            # 工程4: エクスポートダイアログを取得
             export_dialog = self.find_export_dialog()
+            if not export_dialog:
+                return {
+                    'success': False,
+                    'message': 'Excelへの書き出しダイアログが開きませんでした。'
+                }
+
+            # 工程5: ファイル名を設定してOK
+            if not self.fill_export_dialog(export_dialog):
+                return {
+                    'success': False,
+                    'message': 'エクスポートダイアログの操作に失敗しました。'
+                }
 
             end_time = time.time()
             duration = end_time - start_time
 
-            if export_dialog:
-                return {
-                    'success': True,
-                    'message': f'Excelへの書き出しダイアログを開きました（{duration:.2f}秒）\n\n[Phase 1-B 完了] 次のステップ: ダイアログ操作を実装',
-                    'duration': duration,
-                    'phase': '1-B'
-                }
-            else:
-                return {
-                    'success': True,
-                    'message': f'Excelボタンをクリックしました（{duration:.2f}秒）\n\n[Phase 1-B 完了] ダイアログが開いたか確認してください',
-                    'duration': duration,
-                    'phase': '1-B'
-                }
-
-            # === Phase 1-C: ダイアログ操作（次のフェーズで実装） ===
-            # # 工程5: ファイル名を設定してOK
-            # if not self.fill_export_dialog(export_dialog):
-            #     return {
-            #         'success': False,
-            #         'message': 'エクスポートダイアログの操作に失敗しました。'
-            #     }
-            #
-            # end_time = time.time()
-            # duration = end_time - start_time
-            #
-            # output_path = f"C:\\Users\\user\\Downloads\\{self.output_filename}.xls"
-            # return {
-            #     'success': True,
-            #     'message': f'顧客リストをエクスポートしました（{duration:.2f}秒）\n\n出力ファイル:\n{output_path}',
-            #     'duration': duration,
-            #     'output_file': output_path
-            # }
+            output_path = f"C:\\Users\\user\\Downloads\\{self.output_filename}.xls"
+            return {
+                'success': True,
+                'message': f'顧客リストをエクスポートしました（{duration:.2f}秒）\n\n出力ファイル:\n{output_path}',
+                'duration': duration,
+                'output_file': output_path
+            }
 
         except Exception as e:
             return {
