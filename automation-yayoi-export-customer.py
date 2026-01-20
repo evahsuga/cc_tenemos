@@ -135,49 +135,22 @@ class YayoiCustomerExportAutomation:
             traceback.print_exc(file=sys.stderr)
             return False
 
-    def find_customer_ledger_window(self):
-        """得意先台帳ウィンドウを探す"""
-        try:
-            print("\n得意先台帳ウィンドウを探しています...", file=sys.stderr)
-            time.sleep(1.0)
-
-            # プロセス内のウィンドウを探す
-            if self.app:
-                all_windows = self.app.windows()
-                print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
-
-                for window in all_windows:
-                    try:
-                        title = window.window_text() or "(タイトルなし)"
-                        print(f"  → ウィンドウ: {title}", file=sys.stderr)
-                        if "得意先台帳" in title:
-                            print(f"  ✓ 得意先台帳ウィンドウを発見: {title}", file=sys.stderr)
-                            return window
-                    except:
-                        pass
-
-            print("⚠ 得意先台帳ウィンドウが見つかりません", file=sys.stderr)
-            return None
-
-        except Exception as e:
-            print(f"❌ ウィンドウ検索エラー: {str(e)}", file=sys.stderr)
-            return None
-
-    def click_excel_button(self, ledger_window):
-        """Excelボタンをクリック"""
+    def click_excel_button(self):
+        """Excelボタンをクリック（メインウィンドウ内のツールバーから）"""
         try:
             print("\nExcelボタンをクリックしています...", file=sys.stderr)
 
-            # 得意先台帳ウィンドウをアクティブにする
-            ledger_window.set_focus()
+            # メインウィンドウをアクティブにする
+            self.main_window.set_focus()
             time.sleep(0.35)
 
-            # 方法1: ツールバーからExcelボタンを探してクリック
+            # 方法1: UIAutomation でExcelボタンを探す
             try:
-                # ボタンを名前で検索
-                excel_button = ledger_window.child_window(title="Excel", control_type="Button")
-                if excel_button.exists():
-                    print("  → Excelボタンを発見（Button検索）", file=sys.stderr)
+                print("  → UIAutomationでExcelボタンを検索中...", file=sys.stderr)
+                # メインウィンドウの子孫からExcelボタンを探す
+                excel_button = self.main_window.child_window(title="Excel", control_type="Button")
+                if excel_button.exists(timeout=2):
+                    print("  ✓ Excelボタンを発見", file=sys.stderr)
                     excel_button.click()
                     time.sleep(1.0)
                     print("✓ Excelボタンをクリックしました", file=sys.stderr)
@@ -185,16 +158,18 @@ class YayoiCustomerExportAutomation:
             except Exception as e:
                 print(f"  → Button検索失敗: {str(e)}", file=sys.stderr)
 
-            # 方法2: ToolBarからExcelボタンを探す
+            # 方法2: ToolBarを探してボタンを列挙
             try:
-                toolbar = ledger_window.child_window(control_type="ToolBar")
-                if toolbar.exists():
-                    print("  → ツールバーを発見", file=sys.stderr)
-                    # ツールバー内のボタンを探す
+                print("  → ツールバーを検索中...", file=sys.stderr)
+                toolbars = self.main_window.children(control_type="ToolBar")
+                for toolbar in toolbars:
+                    toolbar_name = toolbar.window_text()
+                    print(f"    → ツールバー: {toolbar_name}", file=sys.stderr)
                     buttons = toolbar.children(control_type="Button")
                     for btn in buttons:
                         btn_name = btn.window_text()
-                        print(f"    → ボタン: {btn_name}", file=sys.stderr)
+                        if btn_name:
+                            print(f"      → ボタン: {btn_name}", file=sys.stderr)
                         if "Excel" in btn_name:
                             btn.click()
                             time.sleep(1.0)
@@ -203,36 +178,44 @@ class YayoiCustomerExportAutomation:
             except Exception as e:
                 print(f"  → ToolBar検索失敗: {str(e)}", file=sys.stderr)
 
-            # 方法3: すべてのコントロールを探索
+            # 方法3: 全コントロールを探索してExcel関連を探す
             try:
                 print("  → 全コントロールを探索中...", file=sys.stderr)
-                all_controls = ledger_window.descendants()
-                for ctrl in all_controls:
+                # 子孫を取得（深さ制限）
+                for ctrl in self.main_window.descendants(depth=5):
                     try:
-                        ctrl_name = ctrl.window_text()
-                        ctrl_type = ctrl.control_type()
-                        if ctrl_name and "Excel" in ctrl_name:
-                            print(f"    → Excel関連コントロール発見: {ctrl_name} ({ctrl_type})", file=sys.stderr)
-                            if ctrl_type in ["Button", "MenuItem", "ToolBar"]:
+                        ctrl_name = ctrl.window_text() or ""
+                        ctrl_type = ctrl.control_type() or ""
+                        if "Excel" in ctrl_name:
+                            print(f"    → Excel関連発見: [{ctrl_name}] ({ctrl_type})", file=sys.stderr)
+                            if ctrl_type in ["Button", "MenuItem", "SplitButton"]:
                                 ctrl.click()
                                 time.sleep(1.0)
-                                print("✓ Excelボタンをクリックしました", file=sys.stderr)
+                                print("✓ Excelコントロールをクリックしました", file=sys.stderr)
                                 return True
                     except:
                         pass
             except Exception as e:
                 print(f"  → 全探索失敗: {str(e)}", file=sys.stderr)
 
-            # 方法4: Tab移動でExcelボタンにフォーカスを移動
-            print("  → Tab移動でExcelボタンを探します...", file=sys.stderr)
-            # ツールバーの位置を推定（スクリーンショットから約7番目のボタン）
-            # 戻る, 進む, 新規作成, コード付番, 削除, 参照, ウィザード, Excel の順
-            for i in range(15):
-                ledger_window.type_keys("{TAB}")
+            # 方法4: キーボードショートカットを試行（Alt + ツールバーアクセス）
+            print("  → キーボードショートカットを試行...", file=sys.stderr)
+            import pywinauto.keyboard as keyboard
+
+            # F6でツールバーにフォーカスを移動（Windows共通）
+            keyboard.send_keys("{F6}")
+            time.sleep(0.3)
+
+            # Excelボタンまで移動（右矢印キー）
+            # ツールバー順: 戻る, 進む, 新規作成, コード付番, 削除, 参照, ウィザード, Excel
+            for i in range(8):
+                keyboard.send_keys("{RIGHT}")
                 time.sleep(0.1)
-            ledger_window.type_keys("{ENTER}")
+
+            # Enterで実行
+            keyboard.send_keys("{ENTER}")
             time.sleep(1.0)
-            print("✓ Tab移動でExcelボタンをクリック試行", file=sys.stderr)
+            print("✓ キーボードでExcelボタンをクリック試行", file=sys.stderr)
             return True
 
         except Exception as e:
@@ -361,42 +344,36 @@ class YayoiCustomerExportAutomation:
                     'message': '顧客台帳を開けませんでした。'
                 }
 
-            # 工程3: 得意先台帳ウィンドウを取得
-            ledger_window = self.find_customer_ledger_window()
-            if not ledger_window:
-                # ウィンドウが見つからなくても続行（キー操作で対応）
-                print("⚠ 得意先台帳ウィンドウが見つかりませんが続行します", file=sys.stderr)
+            # === Phase 1-B: Excelボタンクリック ===
+            # 工程3: Excelボタンをクリック
+            if not self.click_excel_button():
+                return {
+                    'success': False,
+                    'message': 'Excelボタンのクリックに失敗しました。'
+                }
 
-            # === Phase 1-A ここまで ===
-            # 以下は Phase 1-B, 1-C で実装
+            # 工程4: エクスポートダイアログを確認
+            export_dialog = self.find_export_dialog()
 
             end_time = time.time()
             duration = end_time - start_time
 
-            return {
-                'success': True,
-                'message': f'顧客台帳を開きました（{duration:.2f}秒）\n\n[Phase 1-A 完了] 次のステップ: Excelボタンクリックを実装',
-                'duration': duration,
-                'phase': '1-A'
-            }
+            if export_dialog:
+                return {
+                    'success': True,
+                    'message': f'Excelへの書き出しダイアログを開きました（{duration:.2f}秒）\n\n[Phase 1-B 完了] 次のステップ: ダイアログ操作を実装',
+                    'duration': duration,
+                    'phase': '1-B'
+                }
+            else:
+                return {
+                    'success': True,
+                    'message': f'Excelボタンをクリックしました（{duration:.2f}秒）\n\n[Phase 1-B 完了] ダイアログが開いたか確認してください',
+                    'duration': duration,
+                    'phase': '1-B'
+                }
 
-            # === Phase 1-B: Excelボタンクリック ===
-            # if ledger_window:
-            #     if not self.click_excel_button(ledger_window):
-            #         return {
-            #             'success': False,
-            #             'message': 'Excelボタンのクリックに失敗しました。'
-            #         }
-            #
-            # # 工程4: エクスポートダイアログを取得
-            # export_dialog = self.find_export_dialog()
-            # if not export_dialog:
-            #     return {
-            #         'success': False,
-            #         'message': 'エクスポートダイアログが開きませんでした。'
-            #     }
-            #
-            # === Phase 1-C: ダイアログ操作 ===
+            # === Phase 1-C: ダイアログ操作（次のフェーズで実装） ===
             # # 工程5: ファイル名を設定してOK
             # if not self.fill_export_dialog(export_dialog):
             #     return {
