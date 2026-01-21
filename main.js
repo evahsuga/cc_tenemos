@@ -12,47 +12,42 @@ let chromeProcess = null;
 // FirefoxでURLを開くヘルパー関数（既存ウィンドウの新しいタブで開く）
 function openUrlInFirefox(url) {
   const platform = process.platform;
-  let firefoxPath;
-  let args;
+  const { exec } = require('child_process');
 
   if (platform === 'win32') {
-    // Windows: 複数の可能性のあるパスを試す
-    const possiblePaths = [
-      'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
-      'C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe',
-      process.env.LOCALAPPDATA + '\\Mozilla Firefox\\firefox.exe'
-    ];
+    // Windows: startコマンド経由でFirefoxを起動（既存プロセスと通信）
+    // startコマンドは既存のFirefoxプロセスにURLを渡す
+    const command = `start firefox "${url}"`;
+    console.log(`Firefox起動 (Windows): ${command}`);
 
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        firefoxPath = p;
-        break;
+    exec(command, (error) => {
+      if (error) {
+        console.log('Firefox起動エラー、デフォルトブラウザで開きます:', error.message);
+        shell.openExternal(url);
       }
-    }
-
-    if (!firefoxPath) {
-      console.log('Firefoxが見つからないため、デフォルトブラウザで開きます');
-      shell.openExternal(url);
-      return;
-    }
-
-    args = ['-new-tab', url];
+    });
   } else if (platform === 'darwin') {
-    firefoxPath = '/Applications/Firefox.app/Contents/MacOS/firefox';
-    args = ['-new-tab', url];
+    // macOS: openコマンドでFirefoxを指定
+    const command = `open -a Firefox "${url}"`;
+    console.log(`Firefox起動 (macOS): ${command}`);
+
+    exec(command, (error) => {
+      if (error) {
+        console.log('Firefox起動エラー、デフォルトブラウザで開きます:', error.message);
+        shell.openExternal(url);
+      }
+    });
   } else {
-    firefoxPath = 'firefox';
-    args = ['-new-tab', url];
+    // Linux
+    const command = `firefox "${url}"`;
+    console.log(`Firefox起動 (Linux): ${command}`);
+
+    exec(command, (error) => {
+      if (error) {
+        shell.openExternal(url);
+      }
+    });
   }
-
-  console.log(`Firefox起動: ${firefoxPath} -new-tab ${url}`);
-
-  const firefox = spawn(firefoxPath, args, {
-    detached: true,
-    stdio: 'ignore'
-  });
-
-  firefox.unref();
 }
 
 // Chromeデバッグモードが起動しているか確認
