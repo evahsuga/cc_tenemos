@@ -509,10 +509,10 @@
                     <input type="checkbox" class="checkbox-external" id="task-3-1" onchange="toggleCompleteExternal(this, 'step-card-3-1')">
                 </div>
 
-                <!-- ステップ3 -->
+                <!-- ステップ3-2 -->
                 <div class="step-wrapper">
-                    <div class="step-card clickable" id="step-card-3" onclick="openColorYayoApp()">
-                        <div class="step-number">3</div>
+                    <div class="step-card clickable" id="step-card-3-2" onclick="openColorYayoApp()">
+                        <div class="step-number">3-2</div>
                         <div class="step-title">顧客登録照合</div>
                         <div class="step-status">
                             <span class="badge badge-semi-auto">準AUTO</span>
@@ -522,7 +522,7 @@
                             </div>
                         </div>
                     </div>
-                    <input type="checkbox" class="checkbox-external" id="task-3" onchange="toggleCompleteExternal(this, 'step-card-3')">
+                    <input type="checkbox" class="checkbox-external" id="task-3-2" onchange="toggleCompleteExternal(this, 'step-card-3-2')">
                 </div>
             </div>
             
@@ -530,10 +530,10 @@
             <div class="phase-section">
                 <div class="phase-header">新規顧客処理フェーズ（対象０人の時はスキップ）</div>
 
-                <!-- ステップ5-1 -->
+                <!-- ステップ5 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5-1" target="color_yayo_app" rel="noopener noreferrer">
-                        <div class="step-number">5-1</div>
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5" target="color_yayo_app" rel="noopener noreferrer">
+                        <div class="step-number">5</div>
                         <div class="step-title">新規登録が必要な人の「弥生販売顧客登録用」txtダウンロード</div>
                         <div class="step-status">
                             <span class="badge badge-semi-auto">準AUTO</span>
@@ -543,7 +543,7 @@
                             </div>
                         </div>
                     </a>
-                    <input type="checkbox" class="checkbox-external" id="task-5-1" onchange="toggleCompleteExternal(this, 'step-card-5-1')">
+                    <input type="checkbox" class="checkbox-external" id="task-5" onchange="toggleCompleteExternal(this, 'step-card-5')">
                 </div>
 
                 <!-- ステップ6 -->
@@ -567,10 +567,10 @@
             <div class="phase-section">
                 <div class="phase-header">売上伝票作成フェーズ</div>
 
-                <!-- ステップ4 -->
+                <!-- ステップ7-1 -->
                 <div class="step-wrapper">
-                    <div class="step-card disabled" id="step-card-4">
-                        <div class="step-number">4</div>
+                    <div class="step-card disabled" id="step-card-7-1">
+                        <div class="step-number">7-1</div>
                         <div class="step-title">入金記録をもとに、受注プレビュー□欄へチェックを入れる</div>
                         <div class="step-status">
                             <span class="badge badge-manual">手動</span>
@@ -580,13 +580,13 @@
                             </div>
                         </div>
                     </div>
-                    <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
+                    <input type="checkbox" class="checkbox-external" id="task-7-1" onchange="toggleCompleteExternal(this, 'step-card-7-1')">
                 </div>
 
-                <!-- ステップ5-2 -->
+                <!-- ステップ7-2 -->
                 <div class="step-wrapper">
-                    <div class="step-card clickable" id="step-card-5-2" onclick="showStep5_2Modal()">
-                        <div class="step-number">5-2</div>
+                    <div class="step-card clickable" id="step-card-7-2" onclick="showStep7_2Modal()">
+                        <div class="step-number">7-2</div>
                         <div class="step-title">伝票出力の必要な人の「弥生販売売上伝票用」txtダウンロード</div>
                         <div class="step-status">
                             <span class="badge badge-manual">手動</span>
@@ -596,23 +596,23 @@
                             </div>
                         </div>
                     </div>
-                    <input type="checkbox" class="checkbox-external" id="task-5-2" onchange="toggleCompleteExternal(this, 'step-card-5-2')">
+                    <input type="checkbox" class="checkbox-external" id="task-7-2" onchange="toggleCompleteExternal(this, 'step-card-7-2')">
                 </div>
 
-                <!-- ステップ7 -->
+                <!-- ステップ7-3 -->
                 <div class="step-wrapper">
-                    <div class="step-card" id="step-card-7" onclick="runYayoiSalesImport()">
-                        <div class="step-number">7</div>
+                    <div class="step-card" id="step-card-7-3" onclick="runYayoiSalesImport()">
+                        <div class="step-number">7-3</div>
                         <div class="step-title">弥生販売インポート 売上伝票入力</div>
                         <div class="step-status">
-                            <span class="badge badge-manual-dev" id="step-7-badge">開発中</span>
+                            <span class="badge badge-manual-dev" id="step-7-3-badge">開発中</span>
                             <div class="note-icon">
                                 📝
                                 <div class="tooltip">弥生販売自動化プログラム 開発中</div>
                             </div>
                         </div>
                     </div>
-                    <input type="checkbox" class="checkbox-external" id="task-7" onchange="toggleCompleteExternal(this, 'step-card-7')">
+                    <input type="checkbox" class="checkbox-external" id="task-7-3" onchange="toggleCompleteExternal(this, 'step-card-7-3')">
                 </div>
 
                 <!-- ステップ8 -->
@@ -812,8 +812,8 @@
             }
         }
 
-        // Step 5-2: 弥生販売売上伝票用txtダウンロード手順モーダル
-        function showStep5_2Modal() {
+        // Step 7-2: 弥生販売売上伝票用txtダウンロード手順モーダル
+        function showStep7_2Modal() {
             const instructionHtml = `
                 <div style="text-align: left; line-height: 1.8;">
                     <p><strong>STEP３で開いた画面で操作します。</strong></p>
@@ -828,7 +828,7 @@
                     <p><strong>３</strong> クリックしてTXTデータをダウンロード</p>
                 </div>
             `;
-            showModal('Step 5-2: 売上伝票用TXTダウンロード', instructionHtml, 'info');
+            showModal('Step 7-2: 売上伝票用TXTダウンロード', instructionHtml, 'info');
         }
 
         // カラーミー自動化を実行
@@ -980,14 +980,14 @@
             }
         }
 
-        // 弥生販売 売上伝票インポート自動化を実行
+        // 弥生販売 売上伝票インポート自動化を実行 (Step 7-3)
         async function runYayoiSalesImport() {
             // モーダルを表示
             showModal('処理中...', '弥生販売26のインポート画面に移動しています。<br>しばらくお待ちください。', 'loading');
 
             try {
                 // バッジを実行中に変更
-                const badge = document.getElementById('step-7-badge');
+                const badge = document.getElementById('step-7-3-badge');
                 badge.className = 'badge badge-inprogress';
                 badge.textContent = '実行中';
 
@@ -1017,10 +1017,10 @@
                     badge.textContent = '完了';
 
                     // チェックボックスも自動でチェック
-                    const checkbox = document.getElementById('task-7');
+                    const checkbox = document.getElementById('task-7-3');
                     if (checkbox) {
                         checkbox.checked = true;
-                        toggleCompleteExternal(checkbox, 'step-card-7');
+                        toggleCompleteExternal(checkbox, 'step-card-7-3');
                     }
                 } else {
                     // エラー時
@@ -1032,7 +1032,7 @@
             } catch (error) {
                 // 例外発生時
                 showModal('エラー', 'エラーが発生しました: ' + error.message, 'error');
-                const badge = document.getElementById('step-7-badge');
+                const badge = document.getElementById('step-7-3-badge');
                 badge.className = 'badge badge-manual-dev';
                 badge.textContent = '開発中';
             }

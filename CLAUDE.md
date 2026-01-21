@@ -98,7 +98,7 @@ ColorMe       Yayoi Sales     │
 - `automation-coloreme.js` - Original prototype (launches new browser instance)
 - `automation-yayoi.py` - Yayoi Sales Windows automation (original prototype)
 - `automation-yayoi-import-customer.py` - Yayoi Sales customer import automation (Step 6, active development)
-- `automation-yayoi-import-sales.py` - Yayoi Sales slip import automation (Step 7, active development)
+- `automation-yayoi-import-sales.py` - Yayoi Sales slip import automation (Step 7-3, active development)
 
 **Launchers**:
 - `起動.bat` - Windows launcher with git auto-update
@@ -183,8 +183,8 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 - `run-yayoi` - Yayoi automation
 - `run-coloreme-download` - Active ColorMe CSV download
 - `run-yayoi-customer-import` - Yayoi customer import automation (Step 6)
-- `run-yayoi-sales-import` - Yayoi sales slip import automation (Step 7)
-- `open-external-url` - Opens URL in system default browser (used for Step 3)
+- `run-yayoi-sales-import` - Yayoi sales slip import automation (Step 7-3)
+- `open-external-url` - Opens URL in system default browser (used for Step 3-2)
 
 **Note on API exposure**: The preload.js exposes APIs as `window.api` (not `window.electronAPI`). Renderer code uses `window.api.runColorMeDownload()`, etc.
 
@@ -204,16 +204,16 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Step 1: カラーミー受注伝票出力（手動）
 - Step 2: **Fully automated** - ColorMe CSV download
 - Step 3-1: **Fully automated** - 弥生販売 顧客リストExcelエクスポート
-- Step 3: 顧客登録照合（準AUTO - opens external web app）
+- Step 3-2: 顧客登録照合（準AUTO - opens external web app）
 
-**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 5-1, 6)
-- Step 5-1: 弥生販売顧客登録用txtダウンロード（準AUTO）
+**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 5, 6)
+- Step 5: 弥生販売顧客登録用txtダウンロード（準AUTO）
 - Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
-**Phase 3: 売上伝票作成フェーズ** (Steps 4, 5-2, 7, 8)
-- Step 4: 入金記録をもとに受注プレビュー□欄へチェック（手動）
-- Step 5-2: 弥生販売売上伝票用txtダウンロード（手動）
-- Step 7: 弥生販売インポート売上伝票入力（部分自動化）
+**Phase 3: 売上伝票作成フェーズ** (Steps 7-1, 7-2, 7-3, 8)
+- Step 7-1: 入金記録をもとに受注プレビュー□欄へチェック（手動）
+- Step 7-2: 弥生販売売上伝票用txtダウンロード（手動）
+- Step 7-3: 弥生販売インポート売上伝票入力（部分自動化）
 - Step 8: 弥生販売売上伝票印刷（手動）
 
 **Phase 4: 出荷処理フェーズ** (Steps 9-15)
@@ -222,10 +222,11 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 ### Current Implementation Status
 - ✅ **Step 2: Fully automated** - ColorMe CSV download (production-ready)
 - ✅ **Step 3-1: Fully automated** - 弥生販売 顧客リストExcelエクスポート (2026-01-21)
-- ✅ **Step 3: Opens external app** - Opens conversion web app in default browser
-- ✅ **Step 5-2: Manual with image guide** - Shows instruction modal with screenshot
+- ✅ **Step 3-2: Opens external app** - Opens conversion web app in default browser
+- ✅ **Step 5: Semi-auto** - 弥生販売顧客登録用txtダウンロード（外部アプリ）
 - ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
-- ✅ **Step 7: Partial automation** - Navigates to CSV selection screen, shows manual instruction modal
+- ✅ **Step 7-2: Manual with image guide** - Shows instruction modal with screenshot
+- ✅ **Step 7-3: Partial automation** - Navigates to CSV selection screen, shows manual instruction modal
 - 📋 Steps 9-15: Planned (PowerAutomate)
 
 ## Development Guidelines
@@ -314,8 +315,8 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 
 **Next Steps**:
 - File management: Auto-delete old `sales_all.csv` before download to prevent numbered duplicates
-- Integrate with Step 3 (web app) for customer verification
-- Develop Step 6-7 (Yayoi import automation)
+- Integrate with Step 3-2 (web app) for customer verification
+- Develop Step 6, 7-3 (Yayoi import automation)
 
 ### Step 3-1 Yayoi Customer List Excel Export - Fully Automated (2026-01-21)
 
@@ -324,7 +325,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 **File**: `automation-yayoi-export-customer.py`
 
 **Purpose**:
-複数担当者が業務を行う際、電話対応で直接弥生販売に顧客登録を行うケースがある。その後、他の担当者がアプリからインポートを実行すると、既存顧客情報を上書きしてしまう事故を防止するため、Step 3の照合用データとして提供。
+複数担当者が業務を行う際、電話対応で直接弥生販売に顧客登録を行うケースがある。その後、他の担当者がアプリからインポートを実行すると、既存顧客情報を上書きしてしまう事故を防止するため、Step 3-2の照合用データとして提供。
 
 **Execution Flow** (Total ~15 seconds):
 1. Connect to running Yayoi Sales application (~2 seconds)
@@ -481,7 +482,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ Smart window selection (2026-01-14)
 - ⏳ Import dialog interaction (next phase - screenshot-based development)
 
-### Step 7 Yayoi Sales Slip Import - CSV File Selection Automation (2026-01-14 COMPLETED)
+### Step 7-3 Yayoi Sales Slip Import - CSV File Selection Automation (2026-01-14 COMPLETED)
 
 **Achievement**: Fully automated navigation from menu to CSV file selection screen
 
@@ -536,7 +537,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 **Integration**:
 - IPC Handler: `run-yayoi-sales-import` in main.js
 - API: `window.api.runYayoiSalesImport()` in preload.js
-- UI: Step 7 button in business_flow_dashboard.html
+- UI: Step 7-3 button in business_flow_dashboard.html
 - Badge states: 開発中 → 実行中 → 完了
 
 **Next Steps** (Pending implementation):
@@ -556,7 +557,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ **CSV file selection screen reached** (2026-01-14)
 - ⏳ CSV file browse and import execution (next phase)
 
-**Development Priority**: Step 7 is prioritized over Step 6 due to higher usage frequency in production workflow.
+**Development Priority**: Step 7-3 is prioritized over Step 6 due to higher usage frequency in production workflow.
 
 ### Working with Yayoi Automation (Windows Only)
 
@@ -654,7 +655,7 @@ if (result.success) {
 }
 ```
 
-**With images** (Step 5-2 pattern):
+**With images** (Step 7-2 pattern):
 - Place images in `assets/` folder (e.g., `assets/jidoustep5-2.png`)
 - Reference in modal HTML: `<img src="assets/jidoustep5-2.png" ...>`
 
@@ -665,16 +666,17 @@ if (result.success) {
 **Completed Features**:
 - ✅ Electron app structure with Chrome debug mode integration
 - ✅ **Step 2**: ColorMe CSV download - fully automated (production-ready)
-- ✅ **Step 3**: Opens conversion web app in default browser
-- ✅ **Step 5-2**: Manual instruction modal with screenshot image
+- ✅ **Step 3-1**: 弥生販売 顧客リストExcelエクスポート - fully automated (2026-01-21)
+- ✅ **Step 3-2**: Opens conversion web app in default browser
+- ✅ **Step 7-2**: Manual instruction modal with screenshot image
 - ✅ **Step 6**: Partial automation to import dialog + manual instruction modal
-- ✅ **Step 7**: Partial automation to CSV selection screen + manual instruction modal
+- ✅ **Step 7-3**: Partial automation to CSV selection screen + manual instruction modal
 - ✅ Dashboard UI with workflow visualization and modal system
 - ✅ Git-based auto-update launchers
 
 **Remaining Work**:
 - Steps 9-15 automation (PowerAutomate integration)
-- Optional: Extend Step 6-7 automation to complete file selection (currently uses manual instruction modals)
+- Optional: Extend Step 6, 7-3 automation to complete file selection (currently uses manual instruction modals)
 - File management system (auto-cleanup, archiving)
 
 ## Important Notes
