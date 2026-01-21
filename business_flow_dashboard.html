@@ -493,6 +493,22 @@
                     <input type="checkbox" class="checkbox-external" id="task-2" onchange="toggleCompleteExternal(this, 'step-card-2')">
                 </div>
                 
+                <!-- ステップ3-1: 弥生販売 顧客リストExcelエクスポート -->
+                <div class="step-wrapper">
+                    <div class="step-card clickable" id="step-card-3-1" onclick="runYayoiCustomerExport()">
+                        <div class="step-number">3-1</div>
+                        <div class="step-title">弥生販売 顧客リストExcelエクスポート</div>
+                        <div class="step-status">
+                            <span class="badge badge-auto" id="step-3-1-badge">AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">弥生販売から顧客リストをExcelでダウンロード（照合用データ）</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="checkbox" class="checkbox-external" id="task-3-1" onchange="toggleCompleteExternal(this, 'step-card-3-1')">
+                </div>
+
                 <!-- ステップ3 -->
                 <div class="step-wrapper">
                     <div class="step-card clickable" id="step-card-3" onclick="openColorYayoApp()">
@@ -909,6 +925,58 @@
                 const badge = document.getElementById('step-6-badge');
                 badge.className = 'badge badge-manual-dev';
                 badge.textContent = '開発中';
+            }
+        }
+
+        // 弥生販売 顧客リストExcelエクスポート自動化を実行（Step 3-1）
+        async function runYayoiCustomerExport() {
+            // モーダルを表示
+            showModal('処理中...', '弥生販売から顧客リストをエクスポートしています。<br>しばらくお待ちください。', 'loading');
+
+            try {
+                // バッジを実行中に変更
+                const badge = document.getElementById('step-3-1-badge');
+                badge.className = 'badge badge-inprogress';
+                badge.textContent = '実行中';
+
+                // Electronメインプロセスの自動化を呼び出し
+                const result = await window.api.runYayoiCustomerExport();
+
+                if (result.success) {
+                    // 成功時
+                    const successHtml = `
+                        <div style="text-align: left; line-height: 1.8;">
+                            <p><strong>エクスポート完了！</strong></p>
+                            <p style="margin-top: 1em;">顧客リストがダウンロードフォルダに保存されました。</p>
+                            <p style="margin-top: 0.5em;">
+                            <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">${result.output_file || 'DLca_APP_INP00000YYMMDD.xls'}</code>
+                            </p>
+                            <p style="margin-top: 1em;">次のステップ3で、このファイルをアプリにアップロードして照合してください。</p>
+                        </div>
+                    `;
+                    showModal('顧客リストエクスポート完了', successHtml, 'success');
+                    badge.className = 'badge badge-completed';
+                    badge.textContent = '完了';
+
+                    // チェックボックスも自動でチェック
+                    const checkbox = document.getElementById('task-3-1');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        toggleCompleteExternal(checkbox, 'step-card-3-1');
+                    }
+                } else {
+                    // エラー時
+                    showModal('エラー', result.message, 'error');
+                    badge.className = 'badge badge-auto';
+                    badge.textContent = 'AUTO';
+                }
+
+            } catch (error) {
+                // 例外発生時
+                showModal('エラー', 'エラーが発生しました: ' + error.message, 'error');
+                const badge = document.getElementById('step-3-1-badge');
+                badge.className = 'badge badge-auto';
+                badge.textContent = 'AUTO';
             }
         }
 
