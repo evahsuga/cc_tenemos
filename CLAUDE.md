@@ -394,6 +394,41 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
    - **Solution**: Wait 2.5 seconds after clicking Excel button before searching for dialog
    - Dialogs in Yayoi often take 1-2 seconds to fully render
 
+6. **UI Button Detection (アクセスキーのないボタン)**:
+   - **Problem**: Some buttons (like "Excel") have no access key (Alt+X等), requiring visual detection
+   - **Solution**: Multi-strategy approach with fallback chain
+   ```python
+   # 方法1: child_window で名前検索（最も確実）
+   try:
+       button = self.main_window.child_window(title="Excel")
+       if button.exists(timeout=3):
+           button.click_input()  # click_input() は click() より確実
+           return True
+   except Exception:
+       pass
+
+   # 方法2: descendants() で全子孫を探索
+   try:
+       for ctrl in self.main_window.descendants():
+           if ctrl.window_text() == "Excel":
+               ctrl.click_input()
+               return True
+   except Exception:
+       pass
+
+   # 方法3: 座標クリック（最終手段、デバッグで座標を取得）
+   try:
+       import pywinauto.mouse as mouse
+       # debug-yayoi-ui.py で取得した座標を使用
+       mouse.click(coords=(691, 125))
+       return True
+   except Exception:
+       pass
+   ```
+   - **Debug Script**: `debug-yayoi-ui.py` でUI構造を調査し、ボタン座標を取得
+   - **Key Point**: `click_input()` は `click()` より確実（実際のマウスイベントを発生）
+   - **Reusability**: この技術は弥生販売の他のボタン（印刷、保存など）にも適用可能
+
 **Integration**:
 - IPC Handler: `run-yayoi-customer-export` in main.js
 - API: `window.api.runYayoiCustomerExport()` in preload.js
