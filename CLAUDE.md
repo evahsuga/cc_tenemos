@@ -203,6 +203,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Step 0: ゆうちょ銀行入金確認（手動）
 - Step 1: カラーミー受注伝票出力（手動）
 - Step 2: **Fully automated** - ColorMe CSV download
+- Step 3-1: **Fully automated** - 弥生販売 顧客リストExcelエクスポート
 - Step 3: 顧客登録照合（準AUTO - opens external web app）
 
 **Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 5-1, 6)
@@ -220,6 +221,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 
 ### Current Implementation Status
 - ✅ **Step 2: Fully automated** - ColorMe CSV download (production-ready)
+- ✅ **Step 3-1: Fully automated** - 弥生販売 顧客リストExcelエクスポート (2026-01-21)
 - ✅ **Step 3: Opens external app** - Opens conversion web app in default browser
 - ✅ **Step 5-2: Manual with image guide** - Shows instruction modal with screenshot
 - ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
@@ -314,6 +316,87 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - File management: Auto-delete old `sales_all.csv` before download to prevent numbered duplicates
 - Integrate with Step 3 (web app) for customer verification
 - Develop Step 6-7 (Yayoi import automation)
+
+### Step 3-1 Yayoi Customer List Excel Export - Fully Automated (2026-01-21)
+
+**Achievement**: Full automation of customer list Excel export from Yayoi Sales
+
+**File**: `automation-yayoi-export-customer.py`
+
+**Purpose**:
+複数担当者が業務を行う際、電話対応で直接弥生販売に顧客登録を行うケースがある。その後、他の担当者がアプリからインポートを実行すると、既存顧客情報を上書きしてしまう事故を防止するため、Step 3の照合用データとして提供。
+
+**Execution Flow** (Total ~15 seconds):
+1. Connect to running Yayoi Sales application (~2 seconds)
+   - Desktop enumeration for smart window selection
+   - Priority: 管理者 → プロフェッショナル → スタンダード
+   - Excludes 伝票/台帳 windows
+2. Navigate to customer ledger: Alt+D → A (台帳 → 顧客台帳) (~2 seconds)
+3. Click Excel button in customer ledger window (~1 second)
+4. Wait for "Excelへの書き出し" dialog (~2.5 seconds)
+5. Enter filename in 名称 field (~1 second)
+6. Click OK button (~2 seconds)
+
+**Output File**:
+- Path: `C:\Users\user\Downloads\DLca_APP_INP00000YYMMDD.xls`
+- Format: Excel (.xls) - 得意先リスト形式
+
+**Key Technical Solutions (CRITICAL LEARNINGS)**:
+
+1. **Smart Window Selection (Desktop Enumeration)**:
+   - **Problem**: `Application.connect(title_re=...)` fails when multiple Yayoi windows exist
+   - **Solution**: Use `Desktop(backend="uia").windows()` to enumerate all windows, then filter by priority
+   ```python
+   from pywinauto import Desktop
+   desktop = Desktop(backend="uia")
+   for window in desktop.windows():
+       title = window.window_text()
+       if "弥生販売" in title and "伝票" not in title and "台帳" not in title:
+           # Found main window
+   ```
+   - Exclude 伝票 (slip) and 台帳 (ledger) windows to find the main application window
+
+2. **WindowSpecification vs UIAWrapper**:
+   - **Problem**: After `connect(handle=...)`, window object is UIAWrapper which lacks `child_window()` method
+   - **Solution**: Re-get window from Application object
+   ```python
+   window_handle = selected_window.handle
+   self.app = Application(backend="uia").connect(handle=window_handle)
+   self.main_window = self.app.window(handle=window_handle)  # Now has child_window()
+   ```
+
+3. **ElementNotEnabled Error Handling**:
+   - **Problem**: When a dialog is open, main window becomes disabled and can't receive keyboard input
+   - **Solution**: Catch `ElementNotEnabled` exception and check for blocking dialogs
+   ```python
+   from pywinauto.base_wrapper import ElementNotEnabled
+   try:
+       self.main_window.type_keys("%d")
+   except ElementNotEnabled:
+       # Check for blocking dialogs using self.app.windows()
+   ```
+
+4. **Dialog Detection - Avoiding False Positives**:
+   - **Problem**: Searching for "Excel" in title matches open Excel spreadsheets (e.g., `卸一覧表.xlsx - Excel`)
+   - **Solution**: Search for exact dialog title "Excelへの書き出し" or unique keyword "書き出し"
+   ```python
+   # WRONG: Matches any Excel window
+   if "Excel" in title:
+
+   # CORRECT: Matches only Yayoi export dialog
+   if "書き出し" in title and ".xlsx" not in title and ".xls" not in title:
+   ```
+   - Always exclude `.xlsx` and `.xls` file extensions to avoid matching Excel application windows
+
+5. **Dialog Wait Time**:
+   - **Problem**: Dialog not detected because script checks before it opens
+   - **Solution**: Wait 2.5 seconds after clicking Excel button before searching for dialog
+   - Dialogs in Yayoi often take 1-2 seconds to fully render
+
+**Integration**:
+- IPC Handler: `run-yayoi-customer-export` in main.js
+- API: `window.api.runYayoiCustomerExport()` in preload.js
+- UI: Step 3-1 button in business_flow_dashboard.html with AUTO badge
 
 ### Step 6 Yayoi Customer Import - Partial Automation (2026-01-14)
 
