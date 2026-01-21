@@ -242,12 +242,39 @@ class YayoiCustomerExportAutomation:
         """Excelへの書き出しダイアログを探す"""
         try:
             print("\n「Excelへの書き出し」ダイアログを探しています...", file=sys.stderr)
-            time.sleep(2.5)  # ダイアログが開くまで待機（1秒追加）
+            time.sleep(2.5)  # ダイアログが開くまで待機
 
             # メインウィンドウのハンドルを記憶
             main_handle = self.main_window.handle
 
-            # 方法1: プロセス内のウィンドウを探す（メインウィンドウ以外）
+            # 方法1: メインウィンドウの子ウィンドウとして「Excelへの書き出し」を探す（最優先）
+            try:
+                print("  → 子ウィンドウから「Excelへの書き出し」を検索中...", file=sys.stderr)
+                export_dialog = self.main_window.child_window(title="Excelへの書き出し")
+                if export_dialog.exists(timeout=2):
+                    title = export_dialog.window_text()
+                    print(f"  ✓ エクスポートダイアログを発見（子ウィンドウ）: {title}", file=sys.stderr)
+                    return export_dialog
+            except Exception as e:
+                print(f"  → 子ウィンドウ検索（完全一致）: {str(e)}", file=sys.stderr)
+
+            # 方法2: 子ウィンドウを全探索して「書き出し」を含むものを探す
+            try:
+                print("  → 子ウィンドウ全探索中...", file=sys.stderr)
+                for ctrl in self.main_window.descendants():
+                    try:
+                        ctrl_title = ctrl.window_text() or ""
+                        ctrl_class = ctrl.class_name() or ""
+                        # 「書き出し」を含むダイアログ/ウィンドウを探す
+                        if "書き出し" in ctrl_title:
+                            print(f"  ✓ エクスポートダイアログを発見: {ctrl_title} (class={ctrl_class})", file=sys.stderr)
+                            return ctrl
+                    except:
+                        pass
+            except Exception as e:
+                print(f"  → 子ウィンドウ全探索失敗: {str(e)}", file=sys.stderr)
+
+            # 方法3: プロセス内のウィンドウを探す（メインウィンドウ以外）
             if self.app:
                 all_windows = self.app.windows()
                 print(f"  → プロセス内ウィンドウ数: {len(all_windows)}", file=sys.stderr)
@@ -255,41 +282,25 @@ class YayoiCustomerExportAutomation:
                     try:
                         title = window.window_text() or ""
                         print(f"    → ウィンドウ: {title} (handle={window.handle})", file=sys.stderr)
-                        # メインウィンドウ以外のウィンドウを探す
-                        if window.handle != main_handle:
+                        # メインウィンドウ以外で「書き出し」を含むウィンドウ
+                        if window.handle != main_handle and "書き出し" in title:
                             print(f"  ✓ エクスポートダイアログを発見: {title}", file=sys.stderr)
-                            return window
-                        # タイトルでも判定
-                        if "Excel" in title or "書き出し" in title:
-                            print(f"  ✓ エクスポートダイアログを発見（タイトル一致）: {title}", file=sys.stderr)
                             return window
                     except:
                         pass
 
-            # 方法2: メインウィンドウの子ウィンドウとして探す
-            try:
-                export_dialog = self.main_window.child_window(title_re=".*Excel.*")
-                if export_dialog.exists(timeout=2):
-                    title = export_dialog.window_text()
-                    print(f"  ✓ エクスポートダイアログを発見（子ウィンドウ）: {title}", file=sys.stderr)
-                    return export_dialog
-            except Exception as e:
-                print(f"  → 子ウィンドウ検索失敗: {str(e)}", file=sys.stderr)
-
-            # 方法3: デスクトップから弥生販売の新規ウィンドウを検索
+            # 方法4: デスクトップから「Excelへの書き出し」を検索（厳密な条件）
             from pywinauto import Desktop
             desktop = Desktop(backend="uia")
             print("  → デスクトップからダイアログを検索中...", file=sys.stderr)
             for window in desktop.windows():
                 try:
                     title = window.window_text() or ""
-                    # 弥生販売のダイアログを探す（メインウィンドウ以外）
-                    if window.handle != main_handle:
-                        if "Excel" in title or "書き出し" in title or "弥生" in title:
-                            print(f"  ✓ エクスポートダイアログを発見（デスクトップ）: {title}", file=sys.stderr)
-                            # Applicationとして接続し直す
-                            dialog_app = Application(backend="uia").connect(handle=window.handle)
-                            return dialog_app.window(handle=window.handle)
+                    # 「Excelへの書き出し」または「書き出し」を含む（.xlsxは除外）
+                    if "書き出し" in title and ".xlsx" not in title and ".xls" not in title:
+                        print(f"  ✓ エクスポートダイアログを発見（デスクトップ）: {title}", file=sys.stderr)
+                        dialog_app = Application(backend="uia").connect(handle=window.handle)
+                        return dialog_app.window(handle=window.handle)
                 except:
                     pass
 
