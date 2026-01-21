@@ -367,26 +367,45 @@
 
         .modal-content {
             background: white;
-            padding: 40px;
+            padding: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             max-width: 600px;
             width: 90%;
+            max-height: 85vh;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            flex-shrink: 0;
         }
 
         .modal-title {
             font-size: 24px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px 10px;
+            margin-bottom: 15px;
         }
 
         .modal-message {
             font-size: 16px;
             color: #666;
-            margin-bottom: 30px;
             line-height: 1.6;
+        }
+
+        .modal-footer {
+            flex-shrink: 0;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
         }
 
         .spinner {
@@ -765,11 +784,17 @@
     <!-- 実行状況モーダル -->
     <div class="modal-overlay" id="executionModal">
         <div class="modal-content">
-            <div id="modalSpinner" class="spinner" style="display: none;"></div>
-            <div id="modalIcon"></div>
-            <div class="modal-title" id="modalTitle">処理中...</div>
-            <div class="modal-message" id="modalMessage">カラーミーショップのCSVダウンロードを実行しています。<br>しばらくお待ちください。</div>
-            <button class="modal-close-btn" id="modalCloseBtn" style="display: none;" onclick="closeModal()">閉じる</button>
+            <div class="modal-header">
+                <div id="modalSpinner" class="spinner" style="display: none;"></div>
+                <div id="modalIcon"></div>
+                <div class="modal-title" id="modalTitle">処理中...</div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-message" id="modalMessage">カラーミーショップのCSVダウンロードを実行しています。<br>しばらくお待ちください。</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-close-btn" id="modalCloseBtn" style="display: none;" onclick="closeModal()">閉じる</button>
+            </div>
         </div>
     </div>
 
