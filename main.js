@@ -214,6 +214,25 @@ function createWindow() {
 
   mainWindow.loadFile('business_flow_dashboard.html');
 
+  // 外部リンクをシステムのデフォルトブラウザで開く
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // 外部URLの場合はシステムのデフォルトブラウザで開く
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+      return { action: 'deny' }; // Electronでは開かない
+    }
+    return { action: 'allow' };
+  });
+
+  // ナビゲーションも同様に処理
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    // 外部URLへのナビゲーションを防止し、デフォルトブラウザで開く
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+
   // 開発時はDevToolsを開く
   mainWindow.webContents.openDevTools();
 }
