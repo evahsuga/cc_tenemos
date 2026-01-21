@@ -3,10 +3,57 @@ const path = require('path');
 const { spawn } = require('child_process');
 const os = require('os');
 const http = require('http');
+const fs = require('fs');
 const ColorMeExistingBrowserAutomation = require('./automation-coloreme-existing-browser');
 
 let mainWindow;
 let chromeProcess = null;
+
+// FirefoxでURLを開くヘルパー関数（既存ウィンドウの新しいタブで開く）
+function openUrlInFirefox(url) {
+  const platform = process.platform;
+  let firefoxPath;
+  let args;
+
+  if (platform === 'win32') {
+    // Windows: 複数の可能性のあるパスを試す
+    const possiblePaths = [
+      'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
+      'C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe',
+      process.env.LOCALAPPDATA + '\\Mozilla Firefox\\firefox.exe'
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        firefoxPath = p;
+        break;
+      }
+    }
+
+    if (!firefoxPath) {
+      console.log('Firefoxが見つからないため、デフォルトブラウザで開きます');
+      shell.openExternal(url);
+      return;
+    }
+
+    args = ['-new-tab', url];
+  } else if (platform === 'darwin') {
+    firefoxPath = '/Applications/Firefox.app/Contents/MacOS/firefox';
+    args = ['-new-tab', url];
+  } else {
+    firefoxPath = 'firefox';
+    args = ['-new-tab', url];
+  }
+
+  console.log(`Firefox起動: ${firefoxPath} -new-tab ${url}`);
+
+  const firefox = spawn(firefoxPath, args, {
+    detached: true,
+    stdio: 'ignore'
+  });
+
+  firefox.unref();
+}
 
 // Chromeデバッグモードが起動しているか確認
 function checkChromeDebugRunning(verbose = false) {
@@ -214,11 +261,11 @@ function createWindow() {
 
   mainWindow.loadFile('business_flow_dashboard.html');
 
-  // 外部リンクをシステムのデフォルトブラウザで開く
+  // 外部リンクをFirefoxで開く（既存タブを再利用）
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // 外部URLの場合はシステムのデフォルトブラウザで開く
+    // 外部URLの場合はFirefoxで開く
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      shell.openExternal(url);
+      openUrlInFirefox(url);
       return { action: 'deny' }; // Electronでは開かない
     }
     return { action: 'allow' };
@@ -226,10 +273,10 @@ function createWindow() {
 
   // ナビゲーションも同様に処理
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    // 外部URLへのナビゲーションを防止し、デフォルトブラウザで開く
+    // 外部URLへのナビゲーションを防止し、Firefoxで開く
     if (url.startsWith('http://') || url.startsWith('https://')) {
       event.preventDefault();
-      shell.openExternal(url);
+      openUrlInFirefox(url);
     }
   });
 
@@ -262,6 +309,73 @@ ipcMain.handle('open-external-url', async (event, url) => {
   } catch (error) {
     console.error('外部URL起動エラー:', error);
     return { success: false, message: error.message };
+  }
+});
+
+// FirefoxでURLを開く（既存ウィンドウの新しいタブで開く）
+ipcMain.handle('open-in-firefox', async (event, url) => {
+  console.log('FirefoxでURLを開きます:', url);
+  try {
+    const { spawn } = require('child_process');
+    const platform = process.platform;
+
+    let firefoxPath;
+    let args;
+
+    if (platform === 'win32') {
+      // Windows: 複数の可能性のあるパスを試す
+      const possiblePaths = [
+        'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
+        'C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe',
+        process.env.LOCALAPPDATA + '\\Mozilla Firefox\\firefox.exe'
+      ];
+
+      const fs = require('fs');
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          firefoxPath = p;
+          break;
+        }
+      }
+
+      if (!firefoxPath) {
+        // パスが見つからない場合はshell.openExternalにフォールバック
+        console.log('Firefoxが見つからないため、デフォルトブラウザで開きます');
+        await shell.openExternal(url);
+        return { success: true, message: 'デフォルトブラウザで開きました' };
+      }
+
+      // -new-tab: 既存ウィンドウの新しいタブで開く
+      args = ['-new-tab', url];
+    } else if (platform === 'darwin') {
+      // macOS
+      firefoxPath = '/Applications/Firefox.app/Contents/MacOS/firefox';
+      args = ['-new-tab', url];
+    } else {
+      // Linux
+      firefoxPath = 'firefox';
+      args = ['-new-tab', url];
+    }
+
+    console.log(`Firefox起動: ${firefoxPath} ${args.join(' ')}`);
+
+    const firefox = spawn(firefoxPath, args, {
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    firefox.unref(); // プロセスを切り離す
+
+    return { success: true, message: 'Firefoxで開きました' };
+  } catch (error) {
+    console.error('Firefox起動エラー:', error);
+    // エラー時はshell.openExternalにフォールバック
+    try {
+      await shell.openExternal(url);
+      return { success: true, message: 'デフォルトブラウザで開きました' };
+    } catch (e) {
+      return { success: false, message: error.message };
+    }
   }
 });
 

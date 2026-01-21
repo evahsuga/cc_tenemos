@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('api', {
   runYayoiCustomerImport: () => ipcRenderer.invoke('run-yayoi-customer-import'),
   runYayoiSalesImport: () => ipcRenderer.invoke('run-yayoi-sales-import'),
   runYayoiCustomerExport: () => ipcRenderer.invoke('run-yayoi-customer-export'),
-  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url)
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
+  openInFirefox: (url) => ipcRenderer.invoke('open-in-firefox', url)
 });
