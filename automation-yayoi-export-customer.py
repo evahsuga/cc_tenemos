@@ -29,38 +29,115 @@ class YayoiCustomerExportAutomation:
         self.output_filename = f"DLca_APP_INP00000{datetime.now().strftime('%y%m%d')}"
 
     def connect_to_yayoi(self):
-        """弥生販売に接続（Applicationオブジェクト経由）"""
+        """弥生販売に接続（メインウィンドウを優先的に選択）"""
         try:
             print("弥生販売に接続しています...", file=sys.stderr)
 
-            # Applicationオブジェクトとして接続（管理者ウィンドウを優先）
-            self.app = Application(backend="uia").connect(title_re=".*弥生販売.*管理者.*", timeout=5)
-            self.main_window = self.app.window(title_re=".*弥生販売.*管理者.*")
+            # デスクトップから全ウィンドウを取得して、適切なメインウィンドウを探す
+            from pywinauto import Desktop
+            desktop = Desktop(backend="uia")
 
-            title = self.main_window.window_text()
-            print(f"✓ 弥生販売に接続しました: {title}", file=sys.stderr)
+            # 弥生販売のウィンドウを全て取得
+            yayoi_windows = []
+            for window in desktop.windows():
+                try:
+                    title = window.window_text()
+                    if "弥生販売" in title:
+                        yayoi_windows.append((window, title))
+                        print(f"  発見: {title}", file=sys.stderr)
+                except:
+                    pass
+
+            if not yayoi_windows:
+                print("❌ 弥生販売のウィンドウが見つかりません", file=sys.stderr)
+                return False
+
+            # メインウィンドウを選択する優先順位
+            # 1. 「管理者」を含むウィンドウ（伝票、台帳以外）
+            # 2. 「プロフェッショナル」を含むウィンドウ（伝票、台帳以外）
+            # 3. 「スタンダード」を含むウィンドウ（伝票、台帳以外）
+            # 4. 最初の弥生販売ウィンドウ（伝票、台帳以外）
+
+            selected_window = None
+
+            # 優先度1: 「管理者」を含むウィンドウ（伝票、台帳ではない）
+            for window, title in yayoi_windows:
+                if "管理者" in title and "伝票" not in title and "台帳" not in title:
+                    selected_window = (window, title)
+                    print(f"  → メインウィンドウ（管理者）を選択: {title}", file=sys.stderr)
+                    break
+
+            # 優先度2: 「プロフェッショナル」を含むウィンドウ（伝票、台帳ではない）
+            if not selected_window:
+                for window, title in yayoi_windows:
+                    if "プロフェッショナル" in title and "伝票" not in title and "台帳" not in title:
+                        selected_window = (window, title)
+                        print(f"  → メインウィンドウ（プロフェッショナル）を選択: {title}", file=sys.stderr)
+                        break
+
+            # 優先度3: 「スタンダード」を含むウィンドウ（伝票、台帳ではない）
+            if not selected_window:
+                for window, title in yayoi_windows:
+                    if "スタンダード" in title and "伝票" not in title and "台帳" not in title:
+                        selected_window = (window, title)
+                        print(f"  → メインウィンドウ（スタンダード）を選択: {title}", file=sys.stderr)
+                        break
+
+            # 優先度4: 最初に見つかった弥生販売ウィンドウ（伝票、台帳ではない）
+            if not selected_window:
+                for window, title in yayoi_windows:
+                    if "伝票" not in title and "台帳" not in title:
+                        selected_window = (window, title)
+                        print(f"  → メインウィンドウ（デフォルト）を選択: {title}", file=sys.stderr)
+                        break
+
+            if not selected_window:
+                # 伝票ウィンドウのみの場合はエラーメッセージを改善
+                slip_windows = [t for _, t in yayoi_windows if "伝票" in t or "台帳" in t]
+                if slip_windows:
+                    print(f"❌ メインウィンドウが見つかりません。開いている伝票/台帳: {slip_windows}", file=sys.stderr)
+                    return False
+                print("❌ メインウィンドウを特定できませんでした", file=sys.stderr)
+                return False
+
+            self.main_window = selected_window[0]
+
+            # Applicationオブジェクトを取得（ウィンドウから親プロセスに接続）
+            self.app = Application(backend="uia").connect(handle=self.main_window.handle)
+
+            print(f"✓ 弥生販売に接続しました: {selected_window[1]}", file=sys.stderr)
             return True
 
         except ElementNotFoundError:
-            # 管理者ウィンドウがない場合、一般的な弥生販売ウィンドウを探す
-            try:
-                print("  → 管理者ウィンドウが見つからないため、他のウィンドウを探します...", file=sys.stderr)
-                self.app = Application(backend="uia").connect(title_re=".*弥生販売.*", timeout=5)
-                self.main_window = self.app.window(title_re=".*弥生販売.*")
-                title = self.main_window.window_text()
-                print(f"✓ 弥生販売に接続しました: {title}", file=sys.stderr)
-                return True
-            except Exception as e:
-                print(f"❌ 弥生販売が起動していません: {str(e)}", file=sys.stderr)
-                return False
+            print("❌ 弥生販売が起動していません", file=sys.stderr)
+            return False
         except Exception as e:
             print(f"❌ 接続エラー: {str(e)}", file=sys.stderr)
             import traceback
             traceback.print_exc(file=sys.stderr)
             return False
 
+    def check_for_blocking_dialogs(self):
+        """メインウィンドウをブロックしているダイアログを検出"""
+        try:
+            # プロセス内の全ウィンドウをチェック
+            if self.app:
+                all_windows = self.app.windows()
+                for window in all_windows:
+                    try:
+                        if window.handle != self.main_window.handle:
+                            title = window.window_text() or "(タイトルなし)"
+                            print(f"  ⚠ ブロッキングウィンドウ検出: {title}", file=sys.stderr)
+                            return title
+                    except:
+                        pass
+            return None
+        except:
+            return None
+
     def navigate_to_customer_ledger(self):
         """台帳メニューから顧客台帳を開く"""
+        from pywinauto.base_wrapper import ElementNotEnabled
         try:
             print("\n顧客台帳を開いています...", file=sys.stderr)
 
@@ -81,6 +158,13 @@ class YayoiCustomerExportAutomation:
             print("✓ 顧客台帳を開きました", file=sys.stderr)
             return True
 
+        except ElementNotEnabled:
+            # メインウィンドウが無効 = ダイアログが開いている可能性
+            print("❌ メインウィンドウが無効です（ダイアログが開いている可能性）", file=sys.stderr)
+            blocking = self.check_for_blocking_dialogs()
+            if blocking:
+                print(f"  → ブロックしているウィンドウ: {blocking}", file=sys.stderr)
+            return False
         except Exception as e:
             print(f"❌ 顧客台帳オープンエラー: {str(e)}", file=sys.stderr)
             import traceback
@@ -303,7 +387,7 @@ class YayoiCustomerExportAutomation:
             if not self.navigate_to_customer_ledger():
                 return {
                     'success': False,
-                    'message': '顧客台帳を開けませんでした。'
+                    'message': '顧客台帳を開けませんでした。\n\n他のダイアログや伝票ウィンドウが開いていないか確認してください。'
                 }
 
             # 工程3: Excelボタンをクリック
