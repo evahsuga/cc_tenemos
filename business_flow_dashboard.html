@@ -569,7 +569,7 @@
 
                 <!-- ステップ7-1 -->
                 <div class="step-wrapper">
-                    <div class="step-card disabled" id="step-card-7-1">
+                    <div class="step-card clickable" id="step-card-7-1" onclick="showStep7_1Modal()">
                         <div class="step-number">7-1</div>
                         <div class="step-title">入金記録をもとに、受注プレビュー□欄へチェックを入れる</div>
                         <div class="step-status">
@@ -798,6 +798,30 @@
                 icon.classList.add('open');
                 icon.textContent = '▲';
             }
+        }
+
+        // Step 7-1: 入金記録をもとにチェックを入れる手順モーダル
+        function showStep7_1Modal() {
+            const instructionHtml = `
+                <div style="text-align: left; line-height: 1.8;">
+                    <p><strong>STEP３で開いた画面で操作します。</strong></p>
+                    <p>下記の手順で、入金確認済みの受注にチェックを入れます。</p>
+
+                    <div style="margin: 1em 0; padding: 1em; background: #f8f9ff; border-radius: 8px;">
+                        <p><strong>１</strong> ゆうちょ銀行の入金記録を確認</p>
+                        <p style="margin-left: 1em; color: #666;">（STEP0で確認した内容）</p>
+
+                        <p style="margin-top: 0.8em;"><strong>２</strong> 受注プレビュー一覧から該当する注文を探す</p>
+                        <p style="margin-left: 1em; color: #666;">振込名義・金額で照合</p>
+
+                        <p style="margin-top: 0.8em;"><strong>３</strong> 入金確認できた注文の□欄にチェック</p>
+                        <p style="margin-left: 1em; color: #666;">チェックを入れると売上伝票作成対象になります</p>
+                    </div>
+
+                    <p style="margin-top: 1em; color: #e65100;"><strong>注意:</strong> 入金確認できた注文のみチェックしてください。</p>
+                </div>
+            `;
+            showModal('Step 7-1: 入金記録による受注チェック', instructionHtml, 'info');
         }
 
         // Step 7-2: 弥生販売売上伝票用txtダウンロード手順モーダル
