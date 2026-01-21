@@ -9,14 +9,30 @@ const ColorMeExistingBrowserAutomation = require('./automation-coloreme-existing
 let mainWindow;
 let chromeProcess = null;
 
-// FirefoxでURLを開くヘルパー関数（既存ウィンドウの新しいタブで開く）
+// FirefoxでURLを開くヘルパー関数（既存ウィンドウで開く）
+// 同じURLが既に開いている場合は、そのタブをアクティブにする
+let lastFirefoxUrl = null;
+
 function openUrlInFirefox(url) {
   const platform = process.platform;
   const { exec } = require('child_process');
 
   if (platform === 'win32') {
-    // Windows: startコマンド経由でFirefoxを起動（既存プロセスと通信）
-    // startコマンドは既存のFirefoxプロセスにURLを渡す
+    // 同じURLを連続で開く場合は、既存ウィンドウをアクティブにするだけ
+    if (lastFirefoxUrl === url) {
+      console.log('同じURLが既に開いています。Firefoxウィンドウをアクティブにします。');
+      // PowerShellで既存のFirefoxウィンドウをアクティブにする
+      const activateCommand = `powershell -Command "(New-Object -ComObject WScript.Shell).AppActivate('Firefox')"`;
+      exec(activateCommand, (error) => {
+        if (error) {
+          console.log('Firefoxウィンドウのアクティブ化に失敗:', error.message);
+        }
+      });
+      return;
+    }
+
+    // 新しいURLの場合はFirefoxで開く
+    lastFirefoxUrl = url;
     const command = `start firefox "${url}"`;
     console.log(`Firefox起動 (Windows): ${command}`);
 
@@ -28,6 +44,12 @@ function openUrlInFirefox(url) {
     });
   } else if (platform === 'darwin') {
     // macOS: openコマンドでFirefoxを指定
+    if (lastFirefoxUrl === url) {
+      // 既存ウィンドウをアクティブにする
+      exec('osascript -e \'tell application "Firefox" to activate\'');
+      return;
+    }
+    lastFirefoxUrl = url;
     const command = `open -a Firefox "${url}"`;
     console.log(`Firefox起動 (macOS): ${command}`);
 
