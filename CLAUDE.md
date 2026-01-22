@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **業務自動化ランチャー (Business Automation Launcher)** - An Electron desktop application that automates workflows between ColorMe Shop (カラーミーショップ) e-commerce platform and Yayoi Sales (弥生販売) accounting software.
 
-**Current Version**: v2.0 (2026-01-16) - 現場リリース版
+**Current Version**: v2.2 (2026-01-23) - 現場リリース版
 
 **Key Goal**: Replace slow RPA solutions with a fast, custom desktop app that reduces task execution from 30 seconds to under 1 second, saving ~¥300,000 annually in RPA licensing costs.
 
