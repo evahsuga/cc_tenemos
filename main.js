@@ -9,6 +9,45 @@ const ColorMeExistingBrowserAutomation = require('./automation-coloreme-existing
 let mainWindow;
 let chromeProcess = null;
 
+// ダウンロード完了を待つヘルパー関数
+// .crdownloadファイルがなくなるまで待機（最大60秒）
+async function waitForDownloadComplete(downloadDir, targetFileName, maxWaitMs = 60000) {
+  const startTime = Date.now();
+  const crdownloadPath = path.join(downloadDir, targetFileName + '.crdownload');
+  const finalPath = path.join(downloadDir, targetFileName);
+
+  console.log(`ダウンロード完了を待機中... (最大${maxWaitMs / 1000}秒)`);
+  console.log(`  対象ファイル: ${targetFileName}`);
+
+  while (Date.now() - startTime < maxWaitMs) {
+    // .crdownloadファイルが存在するかチェック
+    const crdownloadExists = fs.existsSync(crdownloadPath);
+    const finalExists = fs.existsSync(finalPath);
+
+    if (finalExists && !crdownloadExists) {
+      // ダウンロード完了
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`✓ ダウンロード完了 (${elapsed}秒)`);
+      return { success: true, filePath: finalPath };
+    }
+
+    if (crdownloadExists) {
+      // まだダウンロード中
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+      if (elapsed % 5 === 0 && elapsed > 0) {
+        console.log(`  ダウンロード中... ${elapsed}秒経過`);
+      }
+    }
+
+    // 1秒待機
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  // タイムアウト
+  console.log('❌ ダウンロードがタイムアウトしました');
+  return { success: false, filePath: null };
+}
+
 // FirefoxでURLを開くヘルパー関数（既存ウィンドウで開く）
 // 同じURLが既に開いている場合は、そのタブをアクティブにする
 let lastFirefoxUrl = null;
@@ -659,17 +698,28 @@ ipcMain.handle('run-coloreme-download', async (event) => {
             }
           });
 
-          // ダウンロード完了を待つ
+          // ダウンロード開始を少し待つ
           await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // ダウンロード完了を待つ（最大60秒）
+          const downloadDir = path.join(os.homedir(), 'Downloads');
+          const downloadResult = await waitForDownloadComplete(downloadDir, 'sales_all.csv', 60000);
 
           await automation.disconnect();
 
-          console.log('✓✓✓ すべての処理が完了しました！');
-
-          return {
-            success: true,
-            message: 'ログインからCSVダウンロードまで完了しました！\nダウンロードフォルダを確認してください。'
-          };
+          if (downloadResult.success) {
+            console.log('✓✓✓ すべての処理が完了しました！');
+            return {
+              success: true,
+              message: 'ログインからCSVダウンロードまで完了しました！\n\nダウンロードファイル:\n' + downloadResult.filePath
+            };
+          } else {
+            console.log('⚠ ダウンロードがタイムアウトしました');
+            return {
+              success: false,
+              message: 'ダウンロードがタイムアウトしました（60秒）。\n\nダウンロードフォルダを確認してください。\n.crdownloadファイルが残っている場合は、手動でダウンロードを再試行してください。'
+            };
+          }
 
         } catch (error) {
           console.error('自動化処理エラー:', error.message);
@@ -760,15 +810,26 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       }
     });
 
-    // ダウンロード完了を待つ
+    // ダウンロード開始を少し待つ
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // ダウンロード完了を待つ（最大60秒）
+    const downloadDir = path.join(os.homedir(), 'Downloads');
+    const downloadResult = await waitForDownloadComplete(downloadDir, 'sales_all.csv', 60000);
 
     await automation.disconnect();
 
-    return {
-      success: true,
-      message: 'CSVファイルのダウンロードが完了しました。ダウンロードフォルダを確認してください。'
-    };
+    if (downloadResult.success) {
+      return {
+        success: true,
+        message: 'CSVファイルのダウンロードが完了しました。\n\nダウンロードファイル:\n' + downloadResult.filePath
+      };
+    } else {
+      return {
+        success: false,
+        message: 'ダウンロードがタイムアウトしました（60秒）。\n\nダウンロードフォルダを確認してください。'
+      };
+    }
 
   } catch (error) {
     await automation.disconnect();
