@@ -205,7 +205,8 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Step 3-1: **Fully automated** - 弥生販売 顧客リストExcelエクスポート
 - Step 3-2: 顧客登録照合（準AUTO - opens external web app）
 
-**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 5, 6)
+**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 4, 5, 6)
+- Step 4: 対象者の有無確認（準AUTO - opens external web app with modal guide）
 - Step 5: 弥生販売顧客登録用txtダウンロード（準AUTO）
 - Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
@@ -222,6 +223,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ **Step 2: Fully automated** - ColorMe CSV download (production-ready)
 - ✅ **Step 3-1: Fully automated** - 弥生販売 顧客リストExcelエクスポート (2026-01-21)
 - ✅ **Step 3-2: Opens external app** - Opens conversion web app in default browser
+- ✅ **Step 4: Semi-auto with modal guide** - 対象者の有無確認（外部アプリ＋画像ガイド）
 - ✅ **Step 5: Semi-auto** - 弥生販売顧客登録用txtダウンロード（外部アプリ）
 - ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
 - ✅ **Step 7-2: Manual with image guide** - Shows instruction modal with screenshot

@@ -549,6 +549,22 @@
             <div class="phase-section">
                 <div class="phase-header">新規顧客処理フェーズ（対象０人の時はスキップ）</div>
 
+                <!-- ステップ4 -->
+                <div class="step-wrapper">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-4" target="color_yayo_app" rel="noopener noreferrer" onclick="showStep4Modal()">
+                        <div class="step-number">4</div>
+                        <div class="step-title">対象者の有無確認</div>
+                        <div class="step-status">
+                            <span class="badge badge-semi-auto">準AUTO</span>
+                            <div class="note-icon">
+                                📝
+                                <div class="tooltip">カラーミー→弥生販売 変換アプリ ver 3.2</div>
+                            </div>
+                        </div>
+                    </a>
+                    <input type="checkbox" class="checkbox-external" id="task-4" onchange="toggleCompleteExternal(this, 'step-card-4')">
+                </div>
+
                 <!-- ステップ5 -->
                 <div class="step-wrapper">
                     <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5" target="color_yayo_app" rel="noopener noreferrer">
@@ -823,6 +839,32 @@
                 icon.classList.add('open');
                 icon.textContent = '▲';
             }
+        }
+
+        // Step 4: 対象者の有無確認モーダル
+        function showStep4Modal() {
+            const instructionHtml = `
+                <div style="text-align: left; line-height: 1.8;">
+                    <p><strong>「新規顧客リスト」を確認し、対象者の有無を判断します。</strong></p>
+
+                    <div style="margin: 1.5em 0; padding: 1em; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+                        <p style="margin: 0 0 0.5em 0; font-weight: bold; color: #2e7d32;">対象者０人の場合 → このフェーズをスキップ</p>
+                        <p style="margin: 0; color: #666;">下記のように表示されていれば、STEP7-1へ進んでください。</p>
+                        <div style="margin-top: 0.8em; text-align: center;">
+                            <img src="assets/step4-no-target.png" alt="対象者0人の場合" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <div style="margin: 1.5em 0; padding: 1em; background: #fff3e0; border-radius: 8px; border-left: 4px solid #ff9800;">
+                        <p style="margin: 0 0 0.5em 0; font-weight: bold; color: #e65100;">対象者がいる場合 → □を空欄のままSTEP5へ</p>
+                        <p style="margin: 0; color: #666;">下記のように新規顧客リストが表示されていれば、STEP5へ進んでください。</p>
+                        <div style="margin-top: 0.8em; text-align: center;">
+                            <img src="assets/step4-has-target.png" alt="対象者がいる場合" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            showModal('Step 4: 対象者の有無確認', instructionHtml, 'info');
         }
 
         // Step 7-1: 入金記録をもとにチェックを入れる手順モーダル
