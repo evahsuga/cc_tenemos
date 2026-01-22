@@ -163,13 +163,13 @@ The application uses a **persistent Chrome profile** via `--user-data-dir=~/.chr
 
 ### IPC Communication Pattern
 
-**Renderer → Main**: Uses `window.electronAPI` exposed via preload.js
+**Renderer → Main**: Uses `window.api` exposed via preload.js
 ```javascript
 // In renderer (business_flow_dashboard.html)
-await window.electronAPI.runColorMeDownload()
+await window.api.runColorMeDownload()
 
 // In preload.js
-contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld('api', {
   runColorMeDownload: () => ipcRenderer.invoke('run-coloreme-download')
 })
 
@@ -181,12 +181,11 @@ ipcMain.handle('run-coloreme-download', async (event) => { ... })
 - `test-action` - Connection test
 - `run-coloreme` - Original ColorMe automation
 - `run-yayoi` - Yayoi automation
-- `run-coloreme-download` - Active ColorMe CSV download
+- `run-coloreme-download` - Active ColorMe CSV download (Step 2)
+- `run-yayoi-customer-export` - Yayoi customer Excel export (Step 3-1)
 - `run-yayoi-customer-import` - Yayoi customer import automation (Step 6)
 - `run-yayoi-sales-import` - Yayoi sales slip import automation (Step 7-3)
-- `open-external-url` - Opens URL in system default browser (used for Step 3-2)
-
-**Note on API exposure**: The preload.js exposes APIs as `window.api` (not `window.electronAPI`). Renderer code uses `window.api.runColorMeDownload()`, etc.
+- `open-external-url` - Opens URL in system default browser (used for Step 3-2, Step 5)
 
 ### Security Configuration
 
@@ -284,39 +283,6 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 5. **Retry Mechanism:**
    - Debug port connection: 20 retries × 2 seconds = 40 seconds max wait
    - Detailed logging at attempts 1, 10, and 19 for diagnostics
-
-### Step 2 Complete Automation - Production Ready (2026-01-14)
-
-**Achievement**: Full automation from button click to CSV download completion
-
-**Execution Flow** (Total ~60 seconds):
-1. Kill existing Chrome processes (2 seconds)
-2. Wait for process cleanup (3 seconds)
-3. Launch Chrome in debug mode (8 seconds)
-4. Connect to debug port (immediate if successful, up to 40 seconds with retry)
-5. Navigate to login page (2 seconds)
-6. Wait for password autofill (3 seconds)
-7. Auto-click login button (immediate)
-8. Wait for login completion (5 seconds)
-9. Navigate to download page (2 seconds)
-10. Select data type and options (1 second)
-11. Execute download (2 seconds)
-
-**Output File**:
-- Path: `C:\Users\user\Downloads\sales_all.csv`
-- Format: ColorMe sales slip data (受注一括データ)
-- Note: Multiple downloads create numbered files: `sales_all (1).csv`, `sales_all (2).csv`, etc.
-
-**Key Success Factors**:
-- IPv6/IPv4 fix (`127.0.0.1` instead of `localhost`)
-- Automatic Chrome process cleanup before launch
-- Sufficient wait times at each step
-- Robust error handling with detailed logging
-
-**Next Steps**:
-- File management: Auto-delete old `sales_all.csv` before download to prevent numbered duplicates
-- Integrate with Step 3-2 (web app) for customer verification
-- Develop Step 6, 7-3 (Yayoi import automation)
 
 ### Step 3-1 Yayoi Customer List Excel Export - Fully Automated (2026-01-21)
 
