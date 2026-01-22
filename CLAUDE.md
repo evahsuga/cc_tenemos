@@ -207,7 +207,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 
 **Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 4, 5, 6)
 - Step 4: 対象者の有無確認（準AUTO - opens external web app with modal guide）
-- Step 5: 弥生販売顧客登録用txtダウンロード（準AUTO）
+- Step 5: 「弥生形式」顧客txtダウンロード（準AUTO）
 - Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
 **Phase 3: 売上伝票作成フェーズ** (Steps 7-1, 7-2, 7-3, 8)
@@ -224,7 +224,7 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ **Step 3-1: Fully automated** - 弥生販売 顧客リストExcelエクスポート (2026-01-21)
 - ✅ **Step 3-2: Opens external app** - Opens conversion web app in default browser
 - ✅ **Step 4: Semi-auto with modal guide** - 対象者の有無確認（外部アプリ＋画像ガイド）
-- ✅ **Step 5: Semi-auto** - 弥生販売顧客登録用txtダウンロード（外部アプリ）
+- ✅ **Step 5: Semi-auto with modal guide** - 「弥生形式」顧客txtダウンロード（外部アプリ＋画像ガイド）
 - ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
 - ✅ **Step 7-2: Manual with image guide** - Shows instruction modal with screenshot
 - ✅ **Step 7-3: Partial automation** - Navigates to CSV selection screen, shows manual instruction modal

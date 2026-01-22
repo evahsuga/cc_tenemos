@@ -567,9 +567,9 @@
 
                 <!-- ステップ5 -->
                 <div class="step-wrapper">
-                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5" target="color_yayo_app" rel="noopener noreferrer">
+                    <a href="https://tenemosnet.github.io/color_yayo/" class="step-card" id="step-card-5" target="color_yayo_app" rel="noopener noreferrer" onclick="showStep5Modal()">
                         <div class="step-number">5</div>
-                        <div class="step-title">新規登録が必要な人の「弥生販売顧客登録用」txtダウンロード</div>
+                        <div class="step-title">「弥生形式」顧客txtダウンロード</div>
                         <div class="step-status">
                             <span class="badge badge-semi-auto">準AUTO</span>
                             <div class="note-icon">
@@ -865,6 +865,26 @@
                 </div>
             `;
             showModal('Step 4: 対象者の有無確認', instructionHtml, 'info');
+        }
+
+        // Step 5: 弥生形式顧客txtダウンロード手順モーダル
+        function showStep5Modal() {
+            const instructionHtml = `
+                <div style="text-align: left; line-height: 1.8;">
+                    <p><strong>STEP３で開いた画面で操作します。</strong></p>
+                    <p>下記の図の通り、□欄はそのままで、ボタンをクリックしてTXTをダウンロードします。</p>
+
+                    <div style="margin: 1em 0; text-align: center;">
+                        <img src="assets/step5-guide.png" alt="操作手順" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+
+                    <div style="margin: 1em 0; padding: 1em; background: #f8f9ff; border-radius: 8px;">
+                        <p><strong>１</strong> □欄はそのまま（チェックを入れない）</p>
+                        <p><strong>２</strong> 「新規顧客をTXT出力（弥生販売インポート用）」をクリック</p>
+                    </div>
+                </div>
+            `;
+            showModal('Step 5: 弥生形式 顧客txtダウンロード', instructionHtml, 'info');
         }
 
         // Step 7-1: 入金記録をもとにチェックを入れる手順モーダル
