@@ -210,8 +210,8 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
 **Phase 3: 売上伝票作成フェーズ** (Steps 7-1, 7-2, 7-3, 8)
-- Step 7-1: 入金記録をもとに受注プレビュー□欄へチェック（手動）
-- Step 7-2: 弥生販売売上伝票用txtダウンロード（手動）
+- Step 7-1: 受注プレビュー□欄へチェック（手動）
+- Step 7-2: 「弥生形式」txtダウンロード（手動）
 - Step 7-3: 弥生販売インポート売上伝票入力（部分自動化）
 - Step 8: 弥生販売売上伝票印刷（手動）
 
