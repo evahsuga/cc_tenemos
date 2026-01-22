@@ -205,9 +205,9 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - Step 3-1: **Fully automated** - 弥生販売 顧客リストExcelエクスポート
 - Step 3-2: 顧客登録照合（準AUTO - opens external web app）
 
-**Phase 2: 新規顧客処理フェーズ（対象０人の時はスキップ）** (Steps 4, 5, 6)
-- Step 4: 対象者の有無確認（準AUTO - opens external web app with modal guide）
-- Step 5: 「弥生形式」顧客txtダウンロード（準AUTO）
+**Phase 2: 新規顧客処理フェーズ** (Steps 4, 5, 6)
+- Step 4: 対象者の有無確認（手動 - opens external web app with modal guide）
+- Step 5: 「弥生形式」顧客txtダウンロード（手動）
 - Step 6: 弥生販売インポート顧客台帳入力（部分自動化）
 
 **Phase 3: 売上伝票作成フェーズ** (Steps 7-1, 7-2, 7-3, 8)
@@ -223,8 +223,8 @@ The dashboard implements a 15-step order-to-shipping workflow divided into 4 pha
 - ✅ **Step 2: Fully automated** - ColorMe CSV download (production-ready)
 - ✅ **Step 3-1: Fully automated** - 弥生販売 顧客リストExcelエクスポート (2026-01-21)
 - ✅ **Step 3-2: Opens external app** - Opens conversion web app in default browser
-- ✅ **Step 4: Semi-auto with modal guide** - 対象者の有無確認（外部アプリ＋画像ガイド）
-- ✅ **Step 5: Semi-auto with modal guide** - 「弥生形式」顧客txtダウンロード（外部アプリ＋画像ガイド）
+- ✅ **Step 4: Manual with modal guide** - 対象者の有無確認（外部アプリ＋画像ガイド）
+- ✅ **Step 5: Manual with modal guide** - 「弥生形式」顧客txtダウンロード（外部アプリ＋画像ガイド）
 - ✅ **Step 6: Partial automation** - Navigates to import dialog, shows manual instruction modal
 - ✅ **Step 7-2: Manual with image guide** - Shows instruction modal with screenshot
 - ✅ **Step 7-3: Partial automation** - Navigates to CSV selection screen, shows manual instruction modal
