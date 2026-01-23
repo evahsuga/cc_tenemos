@@ -725,6 +725,15 @@ ipcMain.handle('run-coloreme-download', async (event) => {
           console.error('自動化処理エラー:', error.message);
           console.error('エラースタック:', error.stack);
           await automation.disconnect();
+
+          // ウィンドウ幅が狭くてボタンがクリックできない場合の専用エラーメッセージ
+          if (error.message.includes('not clickable') || error.message.includes('not an Element')) {
+            return {
+              success: false,
+              message: '【ウィンドウサイズエラー】\n\nChromeのウィンドウ幅が狭いため、ダウンロードボタンが表示されていません。\n\n【解決方法】\n① Chromeウィンドウを横に広げてください（推奨: 1200px以上）\n② 再度このボタンをクリックしてください\n\n※カラーミーショップはレスポンシブデザインのため、ウィンドウ幅が狭いとメニューが折りたたまれます。'
+            };
+          }
+
           return {
             success: false,
             message: '自動化処理中にエラーが発生しました。\n\nエラー: ' + error.message + '\n\n手動でログイン後、再度ボタンをクリックしてください。'
@@ -833,6 +842,15 @@ ipcMain.handle('run-coloreme-download', async (event) => {
 
   } catch (error) {
     await automation.disconnect();
+
+    // ウィンドウ幅が狭くてボタンがクリックできない場合の専用エラーメッセージ
+    if (error.message.includes('not clickable') || error.message.includes('not an Element')) {
+      return {
+        success: false,
+        message: '【ウィンドウサイズエラー】\n\nChromeのウィンドウ幅が狭いため、ダウンロードボタンが表示されていません。\n\n【解決方法】\n① Chromeウィンドウを横に広げてください（推奨: 1200px以上）\n② 再度このボタンをクリックしてください\n\n※カラーミーショップはレスポンシブデザインのため、ウィンドウ幅が狭いとメニューが折りたたまれます。'
+      };
+    }
+
     return {
       success: false,
       message: 'エラーが発生しました: ' + error.message
