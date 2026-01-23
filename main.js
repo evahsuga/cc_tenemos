@@ -758,20 +758,29 @@ ipcMain.handle('run-coloreme-download', async (event) => {
       };
     }
 
-    // カラーミーショップのログインページを開く
-    console.log('カラーミーショップのログインページを開きます...');
+    // カラーミーショップのページを開く
+    console.log('カラーミーショップのページを開きます...');
     await automation.navigateToPage('https://admin.shop-pro.jp/');
 
-    // ページ読み込みとパスワード自動入力を待つ
+    // ページ読み込みを待つ
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // 現在のURLを確認してログイン状態をチェック
+    // 現在のURLを確認
     const currentUrl = automation.page.url();
     console.log('現在のURL:', currentUrl);
 
-    // ログインページのままの場合は、ユーザーに手動ログインを促す
-    if (currentUrl.includes('admin.shop-pro.jp/login') ||
-        (!currentUrl.includes('mode=') && currentUrl.includes('admin.shop-pro.jp'))) {
+    // ログインフォームの存在をチェック（URLではなくページ内容で判定）
+    const hasLoginForm = await automation.page.evaluate(() => {
+      // ログインフォームの特徴的な要素を探す
+      const loginButton = document.querySelector('input[type="submit"][value*="ログイン"]');
+      const passwordField = document.querySelector('input[type="password"]');
+      const loginForm = document.querySelector('form[action*="login"]');
+      return !!(loginButton || (passwordField && loginForm));
+    });
+    console.log('ログインフォーム検出:', hasLoginForm);
+
+    // ログインページの場合は、ユーザーに手動ログインを促す
+    if (hasLoginForm) {
       await automation.disconnect();
       return {
         success: false,
