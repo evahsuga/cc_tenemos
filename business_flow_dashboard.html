@@ -389,6 +389,11 @@
             margin-bottom: 15px;
         }
 
+        .modal-title.error-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
         .modal-body {
             flex: 1;
             overflow-y: auto;
@@ -446,8 +451,8 @@
         }
 
         .error-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
+            font-size: 36px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -1149,6 +1154,9 @@
             modalTitle.textContent = title;
             modalMessage.innerHTML = message;
 
+            // エラー時はタイトルを小さく表示
+            modalTitle.classList.remove('error-title');
+
             if (type === 'loading') {
                 // ローディング中
                 modalSpinner.style.display = 'block';
@@ -1164,6 +1172,7 @@
                 modalSpinner.style.display = 'none';
                 modalIcon.innerHTML = '<div class="error-icon">❌</div>';
                 modalCloseBtn.style.display = 'block';
+                modalTitle.classList.add('error-title');
             } else if (type === 'info') {
                 // 情報・手順説明
                 modalSpinner.style.display = 'none';
