@@ -70,6 +70,7 @@ Main Process IPC Handler
 | `automation-yayoi-import-customer.py` | Yayoi customer import (Step 6) |
 | `automation-yayoi-import-sales.py` | Yayoi sales slip import (Step 7-3) |
 | `debug-yayoi-ui.py` | UI inspection tool for pywinauto |
+| `create-shortcut.ps1` | Windows shortcut creator with Electron icon |
 
 ### Chrome Debug Mode (Critical Pattern)
 
