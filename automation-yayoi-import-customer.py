@@ -217,14 +217,53 @@ class YayoiCustomerImportAutomation:
         return dialog_window
 
     def click_next_button(self, description=""):
-        """次へ（N）ボタンをクリック（グローバルキー送信）"""
+        """次へ（N）ボタンをクリック（ダイアログを探してから送信）"""
         try:
             print(f"\n次へボタンをクリックしています... ({description})", file=sys.stderr)
 
-            # Alt+N で次へボタンを押す（グローバルにキー送信）
-            import pywinauto.keyboard as keyboard
-            keyboard.send_keys("%n")
-            print(f"  → Alt+Nを送信しました", file=sys.stderr)
+            # 弥生販売のプロセスに属するダイアログを探す
+            dialog_window = None
+            try:
+                # appオブジェクトから子ウィンドウを探す
+                if self.app:
+                    # 弥生販売アプリケーションの全ウィンドウを取得
+                    all_windows = self.app.windows()
+                    print(f"  弥生販売プロセスのウィンドウ数: {len(all_windows)}", file=sys.stderr)
+
+                    # メインウィンドウ以外のダイアログを探す
+                    for window in all_windows:
+                        try:
+                            # メインウィンドウではないものを探す
+                            if window.handle != self.main_window.handle:
+                                title = window.window_text() or "(タイトルなし)"
+                                class_name = window.class_name()
+                                print(f"  → 子ウィンドウ発見: [{title}] (Class: {class_name})", file=sys.stderr)
+
+                                # 最初に見つかったダイアログを使用
+                                if not dialog_window:
+                                    dialog_window = window
+                                    print(f"  → このウィンドウを使用します", file=sys.stderr)
+                        except:
+                            pass
+
+                if not dialog_window:
+                    print(f"  ⚠ ダイアログが見つかりません。グローバルにキー送信します。", file=sys.stderr)
+            except Exception as e:
+                print(f"  ⚠ ダイアログ検索エラー: {str(e)}", file=sys.stderr)
+
+            # ダイアログが見つかった場合はダイアログに、見つからない場合は単にキー送信
+            if dialog_window:
+                # ダイアログにフォーカスを移す
+                dialog_window.set_focus()
+                time.sleep(0.35)
+                # Alt+N で次へボタンを押す
+                dialog_window.type_keys("%n")
+                print(f"  → ダイアログにAlt+Nを送信しました", file=sys.stderr)
+            else:
+                # ダイアログが見つからない場合、キーボードイベントを直接送信
+                import pywinauto.keyboard as keyboard
+                keyboard.send_keys("%n")
+                print(f"  → グローバルにAlt+Nを送信しました", file=sys.stderr)
 
             time.sleep(1.4)
 
@@ -242,11 +281,31 @@ class YayoiCustomerImportAutomation:
         try:
             print("\n台帳のインポート（2）を選択しています...", file=sys.stderr)
 
+            # 弥生販売のプロセスに属するダイアログを探す
+            dialog_window = None
+            try:
+                if self.app:
+                    all_windows = self.app.windows()
+                    for window in all_windows:
+                        try:
+                            if window.handle != self.main_window.handle:
+                                if not dialog_window:
+                                    dialog_window = window
+                        except:
+                            pass
+            except:
+                pass
+
             # ラジオボタン「台帳のインポート(2)」を選択
-            # アクセスキーが2なので、2キーを押す
-            import pywinauto.keyboard as keyboard
-            keyboard.send_keys("2")
-            print(f"  → 2キーを送信しました", file=sys.stderr)
+            if dialog_window:
+                dialog_window.set_focus()
+                time.sleep(0.35)
+                dialog_window.type_keys("2")
+                print(f"  → ダイアログに2キーを送信しました", file=sys.stderr)
+            else:
+                import pywinauto.keyboard as keyboard
+                keyboard.send_keys("2")
+                print(f"  → グローバルに2キーを送信しました", file=sys.stderr)
 
             time.sleep(0.7)
 
