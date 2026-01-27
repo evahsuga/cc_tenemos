@@ -268,7 +268,21 @@ function startChromeDebug() {
       });
 
       chromeProcess.stderr.on('data', (data) => {
-        console.log('[Chrome stderr]:', data.toString().trim());
+        const message = data.toString().trim();
+        // 既知の無害な警告メッセージをフィルタリング
+        const ignoredPatterns = [
+          'Unable to move the cache',
+          'Unable to create cache',
+          'Gpu Cache Creation failed',
+          'Autofill.enable',
+          'Autofill.setAddresses',
+          'disk_cache',
+          'gpu_disk_cache'
+        ];
+        const shouldIgnore = ignoredPatterns.some(pattern => message.includes(pattern));
+        if (!shouldIgnore && message.length > 0) {
+          console.log('[Chrome stderr]:', message);
+        }
       });
 
       chromeProcess.on('error', (err) => {
